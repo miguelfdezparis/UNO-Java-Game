@@ -1,3 +1,3 @@
 public class Card {
-    private
+    private Color color;
 }
