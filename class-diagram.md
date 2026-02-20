@@ -1,4 +1,4 @@
-Copilot said: ```mermaid classDiagram direction LR %% ========================= %% MODEL (your UNO domain) %%
+```mermaid classDiagram direction LR %% ========================= %% MODEL (your UNO domain) %%
 Mermaid
 classDiagram
 direction LR
