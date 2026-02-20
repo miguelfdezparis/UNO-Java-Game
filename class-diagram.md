@@ -1,140 +1,141 @@
-```mermaid
+Copilot said: ```mermaid classDiagram direction LR %% ========================= %% MODEL (your UNO domain) %%
+Mermaid
 classDiagram
 direction LR
 
 %% =========================
-%% MODEL (tu dominio UNO)
+%% MODEL (your UNO domain)
 %% =========================
-class Carta {
+class Card {
   -Color color
-  -Valor valor
-  +Carta(Color, Valor)
+  -Value value
+  +Card(Color, Value)
   +getColor() Color
-  +getValor() Valor
-  +esCompatible(Carta, Color) boolean
+  +getValue() Value
+  +isCompatible(Card, Color) boolean
 }
 
-class Baraja {
-  -List~Carta~ cartas
-  +Baraja()
-  -crearBaraja()
-  +barajar()
-  +robar() Carta
+class Deck {
+  -List~Card~ cards
+  +Deck()
+  -createDeck()
+  +shuffle()
+  +draw() Card
   +size() int
 }
 
-class Mano {
-  -List~Carta~ cartas
-  +Mano()
-  +agregarCarta(Carta)
-  +jugarCarta(int) Carta
-  +tieneCartaJugable(Carta, Color) boolean
-  +estaVacia() boolean
-  +mostrar()
+class Hand {
+  -List~Card~ cards
+  +Hand()
+  +addCard(Card)
+  +playCard(int) Card
+  +hasPlayableCard(Card, Color) boolean
+  +isEmpty() boolean
+  +show()
 }
 
-class PilaDescarte {
-  -Stack~Carta~ cartas
-  +PilaDescarte()
-  +ponerCarta(Carta)
-  +verSuperior() Carta
-  +reciclar() List~Carta~
+class DiscardPile {
+  -Stack~Card~ cards
+  +DiscardPile()
+  +putCard(Card)
+  +peekTop() Card
+  +recycle() List~Card~
 }
 
-class Jugador {
-  -String nombre
-  -Mano mano
-  +Jugador(String)
-  +getNombre() String
-  +getMano() Mano
+class Player {
+  -String name
+  -Hand hand
+  +Player(String)
+  +getName() String
+  +getHand() Hand
 }
 
-class JuegoUNO {
-  -List~Jugador~ jugadores
-  -Baraja baraja
-  -PilaDescarte descarte
-  -Carta cartaActual
-  -Color colorActual
-  -int turnoActual
-  -int direccion
-  +JuegoUNO(List~Jugador~)
-  +iniciar()
-  +jugarTurno()
-  +aplicarEfecto(Carta)
-  +avanzarTurno()
-  +obtenerJugadorActual() Jugador
-  +hayGanador() boolean
+class UnoGame {
+  -List~Player~ players
+  -Deck deck
+  -DiscardPile discard
+  -Card currentCard
+  -Color currentColor
+  -int currentTurn
+  -int direction
+  +UnoGame(List~Player~)
+  +start()
+  +playTurn()
+  +applyEffect(Card)
+  +advanceTurn()
+  +getCurrentPlayer() Player
+  +hasWinner() boolean
 }
 
 class Color {
   <<enumeration>>
-  ROJO
-  AZUL
-  VERDE
-  AMARILLO
-  NEGRO
+  RED
+  BLUE
+  GREEN
+  YELLOW
+  BLACK
 }
 
-class Valor {
+class Value {
   <<enumeration>>
-  CERO
-  UNO
-  DOS
-  TRES
-  CUATRO
-  CINCO
-  SEIS
-  SIETE
-  OCHO
-  NUEVE
-  SALTO
-  REVERSA
-  MAS_DOS
-  CAMBIO_COLOR
-  MAS_CUATRO
+  ZERO
+  ONE
+  TWO
+  THREE
+  FOUR
+  FIVE
+  SIX
+  SEVEN
+  EIGHT
+  NINE
+  SKIP
+  REVERSE
+  DRAW_TWO
+  WILD
+  WILD_DRAW_FOUR
 }
 
 %% =========================
-%% VIEW (Vista)
+%% VIEW (View)
 %% =========================
 class GameView {
   <<interface>>
   +showWelcome()
-  +renderGameState(JuegoUNO)
-  +renderPlayerHand(Jugador)
-  +askTurnAction(JuegoUNO, Jugador) TurnAction
-  +askCardIndexToPlay(Jugador) int
+  +renderGameState(UnoGame)
+  +renderPlayerHand(Player)
+  +askTurnAction(UnoGame, Player) TurnAction
+  +askCardIndexToPlay(Player) int
   +askColorChoice() Color
   +showInvalidMove(String)
   +showInfo(String)
-  +showWinner(Jugador)
+  +showWinner(Player)
 }
 
 class ConsoleGameView {
   -Scanner in
   +ConsoleGameView()
   +showWelcome()
-  +renderGameState(JuegoUNO)
-  +renderPlayerHand(Jugador)
-  +askTurnAction(JuegoUNO, Jugador) TurnAction
-  +askCardIndexToPlay(Jugador) int
+  +renderGameState(UnoGame)
+  +renderPlayerHand(Player)
+  +askTurnAction(UnoGame, Player) TurnAction
+  +askCardIndexToPlay(Player) int
   +askColorChoice() Color
   +showInvalidMove(String)
   +showInfo(String)
-  +showWinner(Jugador)
+  +showWinner(Player)
 }
 
 %% =========================
-%% CONTROLLER (Controlador)
+%% CONTROLLER (Controller)
 %% =========================
 class GameController {
-  -JuegoUNO juego
+  -UnoGame game
   -GameView view
-  +GameController(JuegoUNO, GameView)
+  +GameController(UnoGame, GameView)
   +run()
   -handleTurn()
-  -requestCardPlay(Jugador) TurnAction
-  -resolveWildColorIfNeeded(Carta) Color
+  -requestCardPlay(Player) TurnAction
+  -resolveWildColorIfNeeded(Card) Color
 }
 
 class TurnAction {
@@ -152,27 +153,27 @@ class TurnActionType {
 }
 
 %% =========================
-%% RELACIONES (Dominio)
+%% RELATIONSHIPS (Domain)
 %% =========================
-Carta --> Color
-Carta --> Valor
+Card --> Color
+Card --> Value
 
-Baraja "1" *-- "many" Carta
-Mano "1" *-- "many" Carta
-PilaDescarte "1" *-- "many" Carta
+Deck "1" *-- "many" Card
+Hand "1" *-- "many" Card
+DiscardPile "1" *-- "many" Card
 
-Jugador "1" *-- "1" Mano
-JuegoUNO "1" *-- "many" Jugador
-JuegoUNO "1" *-- "1" Baraja
-JuegoUNO "1" *-- "1" PilaDescarte
+Player "1" *-- "1" Hand
+UnoGame "1" *-- "many" Player
+UnoGame "1" *-- "1" Deck
+UnoGame "1" *-- "1" DiscardPile
 
 %% =========================
-%% RELACIONES (MVC)
+%% RELATIONSHIPS (MVC)
 %% =========================
-GameController --> JuegoUNO : controla
-GameController --> GameView : usa
+GameController --> UnoGame : controls
+GameController --> GameView : uses
 ConsoleGameView ..|> GameView
 
-GameView --> TurnAction : devuelve
+GameView --> TurnAction : returns
 TurnAction --> TurnActionType
-TurnAction --> Color : (opcional)
+TurnAction --> Color : (optional)
