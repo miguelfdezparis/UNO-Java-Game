@@ -1,5 +1,4 @@
-```mermaid classDiagram direction LR %% ========================= %% MODEL (your UNO domain) %%
-Mermaid
+```mermaid
 classDiagram
 direction LR
 
