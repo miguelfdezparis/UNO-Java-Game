@@ -1,12 +1,24 @@
 package org.example;
 
-public class Value {
-    public static final String[] values;
+public enum Value {
+    // Cartas numéricas
+    ZERO,
+    ONE,
+    TWO,
+    THREE,
+    FOUR,
+    FIVE,
+    SIX,
+    SEVEN,
+    EIGHT,
+    NINE,
 
-    private values = new String[]{
-            "0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
-            "+2", "+4", "CHANGE_COLOR", "PASS", "TURN_SWAP"
-    };
+    // Cartas de acción (tienen color)
+    SKIP,           // Saltar turno
+    REVERSE,        // Invertir dirección
+    DRAW_TWO,       // Robar 2 cartas
 
-
+    // Comodines (sin color → BLACK)
+    WILD,           // Cambiar color
+    WILD_DRAW_FOUR  // Cambiar color + robar 4
 }
