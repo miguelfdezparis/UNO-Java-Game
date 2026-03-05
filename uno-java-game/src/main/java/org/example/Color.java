@@ -1,18 +1,9 @@
-public class Color {
-    public static final String[] COLORES = {"ROJO", "AZUL", "AMARILLO", "VERDE", "NEGRO"};
+package org.example;
 
-    private String color;
-
-    public Color(String color) {
-        this.color = color;
-    }
-
-    public String getColor() {
-        return color;
-    }
-
-    @Override
-    public String toString() {
-        return color;
-    }
+public enum Color {
+    RED,
+    BLUE,
+    GREEN,
+    YELLOW,
+    BLACK       // Negro (solo para comodines: WILD y WILD_DRAW_FOUR)
 }
