@@ -1,11 +1,13 @@
 package org.example;
 import java.util.ArrayList;
+import java.util.Collections;
+
 public class Deck {
     private ArrayList<Card> cards = new ArrayList<>();
-
     public Deck(ArrayList<Card> cards) {
         this.cards = cards;
         createDeck();
+        shuffle();
     }
 
     private void createDeck() {
@@ -40,4 +42,23 @@ public class Deck {
         }
     }
 
+    public void shuffle() {
+        Collections.shuffle(cards);
+    }
+
+    public Card draw() {
+        if (cards.isEmpty()) {
+            throw new IllegalStateException("Deck empty!");
+        }
+        return cards.remove(0);
+    }
+
+    public int size() {
+        return cards.size();
+    }
+
+    public void addCards(ArrayList<Card> recycledCards) {
+        cards.addAll(recycledCards);
+        shuffle();
+    }
 }
