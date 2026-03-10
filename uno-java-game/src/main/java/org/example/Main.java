@@ -1,7 +1,9 @@
 package org.example;
 
 public class Main {
-    static void main() {
-    System.out.println("Hola");
+    public static void main(String[] args) {
+        System.out.println("Hola");
+        Card carta = new Card(Value.ONE, Color.BLACK);
+        System.out.println(carta);
     }
 }
