@@ -8,9 +8,7 @@ public class Card {
     public Card(Value value, Color color) { //Contructor
         this.value = value;
         this.color = color;
-
     }
-
     public Color getColor() {
         return color;
     }
