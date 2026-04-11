@@ -1,12 +1,11 @@
 package org.example;
-import org.example.model.*;
 
-import java.sql.SQLOutput;
+import org.example.controller.GameController;
 
 public class Main {
-    static void main() {
-        System.out.println("Hola");
-        Card carta = new Card(Value.ONE, Color.BLACK);
-        System.out.println(carta);
+
+    // aqui solo arrancamos el juego, nada mas va en el main
+    public static void main(String[] args) {
+        new GameController().start();
     }
 }

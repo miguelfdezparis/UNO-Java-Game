@@ -1,37 +1,28 @@
 package org.example.model;
 
-/**
- * Clase Player: representa a un jugador del UNO.
- *
- * Cada jugador tiene un nombre y una mano con sus cartas
- * Esta clase agrupa un nombre con una mano de cartas.
- * Cada jugador tiene una mano. Si el jugador desaparece, su mano también.
- */
+// representa a un jugador: tiene nombre, su mano de cartas y si es computer o humano
 public class Player {
 
-    private String name;  // Nombre del jugador
-    private Hand hand;    // Mano de cartas del jugador
+    private String name;
+    private Hand hand;
+    private boolean computer;
 
-    /**
-     * Constructor: crea un jugador con un nombre y una mano vacía.
-     */
-    public Player(String name) {
+    public Player(String name, boolean computer) {
         this.name = name;
-        this.hand = new Hand(); // Cada jugador empieza con la mano vacía
+        this.hand = new Hand();
+        this.computer = computer;
     }
 
-    /**
-     * Getter (nombre del jugador).
-     */
     public String getName() {
         return name;
     }
 
-    /**
-     * Getter (mano del jugador).
-     * Devolvemos la referencia a Hand para poder: (añadir cartas, jugar cartas, etc.)
-     */
     public Hand getHand() {
         return hand;
+    }
+
+    // devuelve true si este jugador lo controla el ordenador
+    public boolean isComputer() {
+        return computer;
     }
 }

@@ -1,24 +1,17 @@
 package org.example.model;
 
+// todos los valores posibles de una carta UNO
 public enum Value {
-    // Cartas numéricas
-    ZERO,
-    ONE,
-    TWO,
-    THREE,
-    FOUR,
-    FIVE,
-    SIX,
-    SEVEN,
-    EIGHT,
-    NINE,
 
-    // Cartas de acción (tienen color)
-    SKIP,           // Saltar turno
-    REVERSE,        // Invertir dirección
-    DRAW_TWO,       // Robar 2 cartas
+    // cartas numericas
+    ZERO, ONE, TWO, THREE, FOUR, FIVE, SIX, SEVEN, EIGHT, NINE,
 
-    // Comodines (sin color → BLACK)
-    WILD,           // Cambiar color
-    WILD_DRAW_FOUR  // Cambiar color + robar 4
+    // cartas de accion, tienen color
+    SKIP,       // el siguiente jugador pierde el turno
+    REVERSE,    // cambia el sentido de la partida
+    DRAW_TWO,   // el siguiente roba 2 y pierde el turno
+
+    // cartas comodin, siempre son Color.BLACK
+    WILD,           // elige el color que quieras
+    WILD_DRAW_FOUR  // elige color y el siguiente roba 4
 }
