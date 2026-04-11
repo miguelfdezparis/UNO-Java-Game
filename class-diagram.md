@@ -2,68 +2,18 @@
 classDiagram
 direction LR
 
-%% =========================
-%% MODEL (your UNO domain)
-%% =========================
+%% ========================
+%% MODEL
+%% ========================
+
 class Card {
-  -Color color
   -Value value
-  +Card(Color, Value)
+  -Color color
+  +Card(Value, Color)
   +getColor() Color
   +getValue() Value
   +isCompatible(Card, Color) boolean
-}
-
-class Deck {
-  -List~Card~ cards
-  +Deck()
-  -createDeck()
-  +shuffle()
-  +draw() Card
-  +size() int
-}
-
-class Hand {
-  -List~Card~ cards
-  +Hand()
-  +addCard(Card)
-  +playCard(int) Card
-  +hasPlayableCard(Card, Color) boolean
-  +isEmpty() boolean
-  +show()
-}
-
-class DiscardPile {
-  -Stack~Card~ cards
-  +DiscardPile()
-  +putCard(Card)
-  +peekTop() Card
-  +recycle() List~Card~
-}
-
-class Player {
-  -String name
-  -Hand hand
-  +Player(String)
-  +getName() String
-  +getHand() Hand
-}
-
-class UnoGame {
-  -List~Player~ players
-  -Deck deck
-  -DiscardPile discard
-  -Card currentCard
-  -Color currentColor
-  -int currentTurn
-  -int direction
-  +UnoGame(List~Player~)
-  +start()
-  +playTurn()
-  +applyEffect(Card)
-  +advanceTurn()
-  +getCurrentPlayer() Player
-  +hasWinner() boolean
+  +toString() String
 }
 
 class Color {
@@ -94,85 +44,157 @@ class Value {
   WILD_DRAW_FOUR
 }
 
-%% =========================
-%% VIEW (View)
-%% =========================
-class GameView {
-  <<interface>>
-  +showWelcome()
-  +renderGameState(UnoGame)
-  +renderPlayerHand(Player)
-  +askTurnAction(UnoGame, Player) TurnAction
-  +askCardIndexToPlay(Player) int
-  +askColorChoice() Color
-  +showInvalidMove(String)
-  +showInfo(String)
-  +showWinner(Player)
+class Deck {
+  -ArrayList~Card~ cards
+  +Deck()
+  -buildDeck()
+  +shuffle()
+  +draw() Card
+  +size() int
+  +isEmpty() boolean
+  +addCards(ArrayList~Card~)
 }
 
-class ConsoleGameView {
-  -Scanner in
-  +ConsoleGameView()
-  +showWelcome()
-  +renderGameState(UnoGame)
-  +renderPlayerHand(Player)
-  +askTurnAction(UnoGame, Player) TurnAction
-  +askCardIndexToPlay(Player) int
-  +askColorChoice() Color
-  +showInvalidMove(String)
-  +showInfo(String)
-  +showWinner(Player)
+class Hand {
+  -ArrayList~Card~ cards
+  +Hand()
+  +addCard(Card)
+  +playCard(int) Card
+  +hasPlayableCard(Card, Color) boolean
+  +isEmpty() boolean
+  +size() int
+  +getCard(int) Card
+  +getCards() ArrayList~Card~
 }
 
-%% =========================
-%% CONTROLLER (Controller)
-%% =========================
+class Player {
+  -String name
+  -Hand hand
+  -boolean computer
+  +Player(String, boolean)
+  +getName() String
+  +getHand() Hand
+  +isComputer() boolean
+}
+
+class GameState {
+  -ArrayList~Player~ players
+  -Deck deck
+  -ArrayList~Card~ discardPile
+  -int currentPlayerIndex
+  -boolean clockwise
+  -Color currentColor
+  -boolean gameRunning
+  -HashMap~String, Integer~ scoreBoard
+  -int turnCount
+  +GameState(ArrayList~Player~)
+  +dealInitialCards()
+  +getCurrentPlayer() Player
+  +nextPlayer()
+  +reverseDirection()
+  +getTopCard() Card
+  +playCard(Card)
+  +drawFromDeck() Card
+  +incrementTurnCount()
+  +isClockwise() boolean
+  +getCurrentColor() Color
+  +setCurrentColor(Color)
+  +isGameRunning() boolean
+  +setGameRunning(boolean)
+  +getScoreBoard() HashMap~String, Integer~
+  +getTurnCount() int
+}
+
+%% ========================
+%% VIEW
+%% ========================
+
+class ConsoleView {
+  -Scanner scanner
+  +ConsoleView()
+  +showMenu()
+  +getMenuChoice() int
+  +askPlayerCount() int
+  +askPlayerName(int) String
+  +askIsComputer(String) boolean
+  +showGameState(GameState)
+  +showHand(Player)
+  +renderCard(Card) String
+  +getCardChoice(Player, GameState) int
+  +askPlayDrawnCard(Card) boolean
+  +chooseColor() Color
+  +showMessage(String)
+  +showError(String)
+  +showUnoWarning(Player)
+  +showComputerTurn(Player)
+  +showWinner(Player)
+  +showGameSummary(String, int)
+  +showRules()
+  +showHighScores(HashMap~String, Integer~)
+  +pressEnter()
+  -renderCardBig(Card, Color) String
+  -clearScreen()
+  -readInt(int, int) int
+  -ansiForColor(Color) String
+  -emojiForColor(Color) String
+  -spanishColor(Color) String
+  -labelForValue(Value) String
+}
+
+%% ========================
+%% CONTROLLER
+%% ========================
+
 class GameController {
-  -UnoGame game
-  -GameView view
-  +GameController(UnoGame, GameView)
-  +run()
-  -handleTurn()
-  -requestCardPlay(Player) TurnAction
-  -resolveWildColorIfNeeded(Card) Color
+  -ConsoleView view
+  -FileManager fileManager
+  -HashMap~String, Integer~ allTimeScores
+  +GameController()
+  +start()
+  -runGame()
+  -setupPlayers() ArrayList~Player~
+  -gameLoop(GameState)
+  -humanTurn(GameState) Card
+  -computerTurn(GameState) Card
+  -applyEffect(Card, GameState)
+  -handleWild(Card, GameState)
+  -computerPickColor(Player) Color
+  -isActionCard(Card) boolean
 }
 
-class TurnAction {
-  <<data>>
-  +TurnActionType type
-  +int cardIndex
-  +Color chosenColor
+%% ========================
+%% UTILS
+%% ========================
+
+class FileManager {
+  -String SCORES_FILE
+  +FileManager()
+  +loadScores() HashMap~String, Integer~
+  +saveScores(HashMap~String, Integer~)
 }
 
-class TurnActionType {
-  <<enumeration>>
-  PLAY_CARD
-  DRAW_CARD
-  PASS
-}
-
-%% =========================
-%% RELATIONSHIPS (Domain)
-%% =========================
+%% ========================
+%% RELACIONES - MODEL
+%% ========================
 Card --> Color
 Card --> Value
 
-Deck "1" *-- "many" Card
-Hand "1" *-- "many" Card
-DiscardPile "1" *-- "many" Card
+Deck "1" *-- "many" Card : contiene
+Hand "1" *-- "many" Card : contiene
+Player "1" *-- "1" Hand : tiene
+GameState "1" *-- "many" Player : gestiona
+GameState "1" *-- "1" Deck : usa
+GameState --> Card : discardPile / topCard
+GameState --> Color : currentColor
+GameState --> "scoreBoard" FileManager
 
-Player "1" *-- "1" Hand
-UnoGame "1" *-- "many" Player
-UnoGame "1" *-- "1" Deck
-UnoGame "1" *-- "1" DiscardPile
-
-%% =========================
-%% RELATIONSHIPS (MVC)
-%% =========================
-GameController --> UnoGame : controls
-GameController --> GameView : uses
-ConsoleGameView ..|> GameView
-
-GameView --> TurnAction : returns
-TurnAction --> TurnActionType
-TurnAction --> Color : (optional)
+%% ========================
+%% RELACIONES - MVC
+%% ========================
+GameController --> ConsoleView : usa
+GameController --> FileManager : usa
+GameController --> GameState : crea y controla
+ConsoleView --> GameState : lee
+ConsoleView --> Player : muestra
+ConsoleView --> Card : renderiza
+```
