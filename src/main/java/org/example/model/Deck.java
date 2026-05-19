@@ -19,20 +19,38 @@ public class Deck {
         for (Color color : Color.values()) {
             if (color == Color.BLACK) continue; // las comodin se añaden al final aparte
 
-            cards.add(new Card(Value.ZERO, color)); // un solo 0 por color
+            cards.add(new ColorCard(Value.ZERO, color)); // un solo 0 por color
 
             for (Value value : Value.values()) {
-                if (value == Value.ZERO || value == Value.WILD || value == Value.WILD_DRAW_FOUR) continue;
-                // dos de cada carta para cada color (1-9, skip, reverse, +2)
-                cards.add(new Card(value, color));
-                cards.add(new Card(value, color));
+                if (value == Value.ZERO
+                        || value == Value.WILD
+                        || value == Value.WILD_DRAW_FOUR
+                        || value == Value.DRAW_TWO
+                        || value == Value.REVERSE
+                        || value == Value.SKIP) continue;
+                // dos de cada carta para cada color (1-9)
+                cards.add(new ColorCard(value, color));
+                cards.add(new ColorCard(value, color));
             }
+        }
+
+        //recorre enum de colores
+        for (Color color : Color.values()) {
+            if (color == Color.BLACK) continue;
+
+            // para cada color añade 2 especiales de cada tipo (cambio de turno, +2, prohibido)
+            cards.add(new EffectCard(Value.REVERSE, color));
+            cards.add(new EffectCard(Value.REVERSE, color));
+            cards.add(new EffectCard(Value.DRAW_TWO, color));
+            cards.add(new EffectCard(Value.DRAW_TWO, color));
+            cards.add(new EffectCard(Value.SKIP, color));
+            cards.add(new EffectCard(Value.SKIP, color));
         }
 
         // 4 comodin y 4 comodin+4
         for (int i = 0; i < 4; i++) {
-            cards.add(new Card(Value.WILD, Color.BLACK));
-            cards.add(new Card(Value.WILD_DRAW_FOUR, Color.BLACK));
+            cards.add(new WildCard(Value.WILD, Color.BLACK));
+            cards.add(new WildCard(Value.WILD_DRAW_FOUR, Color.BLACK));
         }
     }
 
