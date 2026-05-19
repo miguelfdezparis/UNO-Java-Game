@@ -1,8 +1,8 @@
 package org.example.model;
 
-public class SpecialCard extends Card {
+public class EffectCard extends Card {
 
-    public SpecialCard(Value value, Color color) {
+    public EffectCard(Value value, Color color) {
         super(value, color);
     }
 
