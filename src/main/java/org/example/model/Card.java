@@ -2,7 +2,7 @@ package org.example.model;
 
 // una carta tiene un valor y un color
 // las cartas comodin siempre usan Color.BLACK como color
-public class Card {
+public abstract class Card {
 
     private Value value;
     private Color color;
@@ -28,6 +28,8 @@ public class Card {
         if (this.value == topCard.getValue()) return true;  // mismo numero o tipo
         return false;
     }
+
+    public abstract boolean hasEffect();
 
     @Override
     public String toString() {
