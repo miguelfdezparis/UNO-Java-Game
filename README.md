@@ -3,7 +3,7 @@
 A console-based version of the UNO card game built in Java as our first real OOP project. We chose UNO because the rules are simple enough to understand but the logic behind it — turns, card effects, direction changes, CPU strategy — gave us enough to properly think about class design. The game supports 2 to 4 players, any combination of human and CPU, and wins are saved to a CSV so the scoreboard persists between sessions.
 
 **Authors:** Miguel Fernández de la Cigoña París & Xurxo Lago Álvarez  
-DAW 1º — 2024/25
+DAW 1º — 2025/26
 
 ## Links
 
