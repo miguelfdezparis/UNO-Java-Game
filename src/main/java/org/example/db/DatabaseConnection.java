@@ -1,5 +1,8 @@
 package org.example.db;
 
+import com.mongodb.MongoClientException;
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoClients;
 import io.github.cdimascio.dotenv.Dotenv;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -15,5 +18,12 @@ public class DatabaseConnection {
         String user = dotenv.get("POSTGRES_USER");
         String pass = dotenv.get("POSTGRES_PASS");
         return DriverManager.getConnection(url, user, pass);
+    }
+
+    public static MongoClient crearCliente() {
+        //Lee la uri (privada) del .env
+        String uri  = dotenv.get("MONGO_URI");
+        //Crea la base
+        return MongoClients.create(uri);
     }
 }
