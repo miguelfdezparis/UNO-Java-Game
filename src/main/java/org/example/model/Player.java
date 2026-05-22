@@ -25,4 +25,9 @@ public class Player {
     public boolean isComputer() {
         return computer;
     }
+
+    @Override
+    public String toString() {
+        return name;
+    }
 }

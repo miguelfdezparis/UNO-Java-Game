@@ -99,7 +99,7 @@ public class ConsoleView {
             boolean isCurrent = p == state.getCurrentPlayer();
             String arrow = isCurrent ? CYAN + BOLD + " >> " + RESET : "    ";
             String tag   = p.isComputer() ? GRAY + " [Computer]" + RESET : "";
-            System.out.println(arrow + BOLD + p.getName() + RESET + tag
+            System.out.println(arrow + BOLD + p + RESET + tag
                     + GRAY + "   " + p.getHand().size() + " carta(s)" + RESET);
         }
         System.out.println();
@@ -108,7 +108,7 @@ public class ConsoleView {
     // muestra la mano del jugador con un numero delante de cada carta para elegir
     public void showHand(Player player) {
         System.out.println();
-        System.out.println(BOLD + WHITE + "  Mano de " + player.getName() + ":" + RESET);
+        System.out.println(BOLD + WHITE + "  Mano de " + player + ":" + RESET);
         System.out.println();
 
         ArrayList<Card> cards = player.getHand().getCards();
@@ -147,7 +147,7 @@ public class ConsoleView {
 
     // pregunta que carta quiere jugar, devuelve el indice o -1 si elige robar
     public int getCardChoice(Player player, GameState state) {
-        System.out.println(BOLD + WHITE + "  Tu turno, " + player.getName() + "!" + RESET);
+        System.out.println(BOLD + WHITE + "  Tu turno, " + player + "!" + RESET);
         System.out.println(GRAY + "  Escribe el numero de una carta para jugarla, o 'r' para robar." + RESET);
 
         while (true) {

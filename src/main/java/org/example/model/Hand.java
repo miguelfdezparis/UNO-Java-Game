@@ -42,7 +42,7 @@ public class Hand {
         return cards.get(index);
     }
 
-    // devuelve toda la lista de cartas, lo usa la vista para pintarlas
+    // devuelve la lista de cartas, ojo que es la misma lista no una copia
     public ArrayList<Card> getCards() {
         return cards;
     }
