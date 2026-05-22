@@ -50,6 +50,22 @@ public class ConsoleView {
         return readInt(1, 4);
     }
 
+    // pregunta que base de datos quiere usar, devuelve 1 para Postgres y 2 para Mongo
+    public int askDatabase() {
+        clearScreen();
+        System.out.println();
+        System.out.println(BOLD + CYAN + "  =====================================" + RESET);
+        System.out.println(BOLD + CYAN + "     Selecciona la base de datos       " + RESET);
+        System.out.println(BOLD + CYAN + "  =====================================" + RESET);
+        System.out.println();
+        System.out.println("   " + CYAN + "1." + RESET + "  PostgreSQL");
+        System.out.println("   " + CYAN + "2." + RESET + "  MongoDB");
+        System.out.println();
+        System.out.print(CYAN + "   > " + RESET);
+        System.out.flush();
+        return readInt(1, 2);
+    }
+
     // pregunta cuantos jugadores van a jugar
     public int askPlayerCount() {
         System.out.println();

@@ -1,5 +1,8 @@
 package org.example.controller;
 
+import org.example.db.BarajaDAO;
+import org.example.db.MongoBarajaDAO;
+import org.example.db.PostgresBarajaDAO;
 import org.example.model.*;
 import org.example.utils.FileManager;
 import org.example.view.ConsoleView;
@@ -13,12 +16,15 @@ public class GameController {
 
     private ConsoleView view;
     private FileManager fileManager;
+    private BarajaDAO barajaDAO;
     private HashMap<String, Integer> allTimeScores; // puntuaciones cargadas del fichero al arrancar
 
     public GameController() {
         view = new ConsoleView();
         fileManager = new FileManager();
         allTimeScores = fileManager.loadScores();
+        int dbChoice = view.askDatabase();
+        barajaDAO = (dbChoice == 1) ? new PostgresBarajaDAO() : new MongoBarajaDAO();
     }
 
     // bucle del menu principal, se queda aqui hasta que el usuario elige salir
