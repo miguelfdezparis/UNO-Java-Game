@@ -19,4 +19,13 @@ public class Carta {
     public String getValor()    { return valor; }
     public String getColor()    { return color; }
     public int getApariciones() { return apariciones; }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+        Carta otra = (Carta) obj;
+        return valor.equals(otra.valor) && color.equals(otra.color);
+    }
+    
 }
