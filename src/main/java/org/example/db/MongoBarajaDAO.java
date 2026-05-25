@@ -1,9 +1,7 @@
 package org.example.db;
 
 import com.mongodb.client.MongoClient;
-import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
-import com.mongodb.client.result.InsertOneResult;
 import org.bson.Document;
 import org.example.model.Carta;
 
@@ -14,9 +12,7 @@ public class MongoBarajaDAO implements BarajaDAO {
 
     @Override
     public void guardarBaraja(ArrayList<Carta> cartas) {
-        try {
-            MongoClient client = DatabaseConnection.crearCliente();
-
+        try (MongoClient client = DatabaseConnection.crearCliente()) {
             MongoCollection<Document> coleccionCartas = client.getDatabase("unojavagame").getCollection("Cartas");
 
             for (Carta c : cartas) {
@@ -35,9 +31,7 @@ public class MongoBarajaDAO implements BarajaDAO {
     @Override
     public ArrayList<Carta> obtenerBaraja() {
         ArrayList<Carta> listaCartas = new ArrayList<>();
-        try {
-            MongoClient cli = DatabaseConnection.crearCliente();
-
+        try (MongoClient cli = DatabaseConnection.crearCliente()) {
             MongoCollection<Document> coleccionCartas = cli.getDatabase("unojavagame").getCollection("Cartas");
 
             for (Document doc : coleccionCartas.find()) {

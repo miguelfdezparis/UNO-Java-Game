@@ -1,6 +1,6 @@
 -- ─────────────────────────────────────────────────────
---  schema.sql  —  UNO Game
---  Ejecutar: psql -U postgres -d uno_game -f sql/schema.sql
+--  schema.sql  —  UNO Java Game
+--  Ejecutar: psql -U postgres -d unojavagame -f sql/schema.sql
 -- ─────────────────────────────────────────────────────
 
 DROP TYPE IF EXISTS tipo_carta   CASCADE;

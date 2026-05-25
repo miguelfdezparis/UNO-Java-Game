@@ -91,7 +91,7 @@ public class ConsoleView {
             String input = scanner.nextLine().trim().toLowerCase();
             if (input.equals("s") || input.equals("si")) return true;
             if (input.equals("n") || input.equals("no")) return false;
-            showError("Escribe 's' para si o 'n' para no.");
+            showError("Solo s o n por favor.");
         }
     }
 
@@ -238,7 +238,7 @@ public class ConsoleView {
     public void showComputerTurn(Player computer) {
         System.out.println();
         System.out.println(GRAY + "  [Computer]  " + computer.getName() + " esta pensando..." + RESET);
-        try { Thread.sleep(900); } catch (InterruptedException ignored) {}
+        try { Thread.sleep(700); } catch (InterruptedException ignored) {}
     }
 
     // muestra la pantalla de victoria con el nombre del ganador
@@ -254,7 +254,7 @@ public class ConsoleView {
     // pequeño resumen al final de la partida
     public void showGameSummary(String winnerName, int turns) {
         System.out.println(GRAY + "  Partida terminada en " + turns + " turno(s)." + RESET);
-        System.out.println(GRAY + "  Puntuacion guardada." + RESET);
+        System.out.println(GRAY + "  Puntuaciones actualizadas." + RESET);
         System.out.println();
     }
 
