@@ -4,6 +4,7 @@ import org.example.db.BarajaDAO;
 import org.example.db.MongoBarajaDAO;
 import org.example.db.PostgresBarajaDAO;
 import org.example.model.*;
+import org.example.utils.CartaConverter;
 import org.example.utils.FileManager;
 import org.example.view.ConsoleView;
 
@@ -46,11 +47,15 @@ public class GameController {
     // prepara los jugadores, reparte las cartas y arranca la partida
     private void runGame() {
         ArrayList<Player> players = setupPlayers();
-        GameState state = new GameState(players);
+        ArrayList<Carta> catalogo = barajaDAO.obtenerBaraja();
+        ArrayList<Card> cardList = CartaConverter.toCards(catalogo);
+        GameState state = new GameState(players, cardList);
         state.dealInitialCards();
         gameLoop(state);
         fileManager.saveScores(allTimeScores);
     }
+
+
 
     // pregunta cuantos jugadores hay y sus nombres, devuelve la lista con todos
     private ArrayList<Player> setupPlayers() {

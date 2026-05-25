@@ -1,5 +1,6 @@
 package org.example.model;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -31,6 +32,11 @@ public class GameState {
         for (Player p : players) {
             scoreBoard.put(p.getName(), 0);
         }
+    }
+
+    public GameState (ArrayList<Player> players, ArrayList<Card> cardsFromDB) {
+        this(players);
+        this.deck = new Deck(cardsFromDB);
     }
 
     // reparte 7 cartas a cada jugador y voltea la primera carta para el descarte

@@ -14,6 +14,11 @@ public class Deck {
         shuffle();
     }
 
+    public Deck(ArrayList<Card> cardsFromDB) {
+        this.cards = cardsFromDB;
+        shuffle();
+    }
+
     // crea el mazo completo: 4 colores con sus cartas normales y especiales, mas las comodin
     private void buildDeck() {
         for (Color color : Color.values()) {
