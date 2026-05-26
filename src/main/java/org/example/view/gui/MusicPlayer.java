@@ -5,7 +5,7 @@ import java.io.InputStream;
 
 public class MusicPlayer {
 
-    private static final int SKIP_BYTES = 9 * 16_000; // ~9s at 128kbps
+    private static final int SKIP_BYTES = 10 * 16_000; // ~10s at 128kbps
 
     private volatile boolean running = false;
     private volatile Player  current = null;
@@ -14,17 +14,14 @@ public class MusicPlayer {
     public void play() {
         running = true;
         playThread = new Thread(() -> {
+            try { Thread.sleep(1000); } catch (InterruptedException e) { return; }
             while (running) {
                 try (InputStream raw = MusicPlayer.class.getResourceAsStream("/music.mp3")) {
-                    if (raw == null) {
-                        System.err.println("[MusicPlayer] music.mp3 no encontrado en resources");
-                        return;
-                    }
+                    if (raw == null) return;
                     raw.skip(SKIP_BYTES);
                     current = new Player(raw);
                     current.play();
                 } catch (Exception e) {
-                    System.err.println("[MusicPlayer] Error: " + e);
                     if (!running) break;
                 }
             }
