@@ -28,7 +28,7 @@ public class MusicPlayer {
                     Header     firstFrame = bitstream.readFrame();
                     if (firstFrame == null) break;
 
-                    int sampleRate = firstFrame.getSampleRate();
+                    int sampleRate = firstFrame.frequency();
                     int channels   = firstFrame.mode() == Header.SINGLE_CHANNEL ? 1 : 2;
                     AudioFormat fmt = new AudioFormat(sampleRate, 16, channels, true, false);
 
