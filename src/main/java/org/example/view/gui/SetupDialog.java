@@ -50,7 +50,7 @@ public class SetupDialog extends JDialog {
         super(parent, "UNO – Configuración", true);
         getContentPane().setBackground(BG);
         setLayout(new BorderLayout());
-        setResizable(false);
+        setResizable(true);
 
         add(buildHeader(),  BorderLayout.NORTH);
 
@@ -84,7 +84,8 @@ public class SetupDialog extends JDialog {
         rebuildPlayers(2);
 
         pack();
-        setSize(480, 580);
+        setMinimumSize(new Dimension(520, 540));
+        setSize(Math.max(520, getWidth()), Math.max(540, getHeight()));
         setLocationRelativeTo(parent);
     }
 
