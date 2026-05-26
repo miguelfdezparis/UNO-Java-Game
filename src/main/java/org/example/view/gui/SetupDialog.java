@@ -117,7 +117,8 @@ public class SetupDialog extends JDialog {
         JRadioButton rb2 = radio("MongoDB",    "mg",  false);
         JRadioButton rb3 = radio("Sin BD (local)", "none", false);
 
-        JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT, 20, 2));
+        JPanel row = new JPanel();
+        row.setLayout(new BoxLayout(row, BoxLayout.Y_AXIS));
         row.setBackground(PANEL);
         row.add(rb1); row.add(rb2); row.add(rb3);
         p.add(row, BorderLayout.CENTER);
