@@ -1,6 +1,5 @@
 @echo off
 chcp 65001 >nul
-setlocal enabledelayedexpansion
 
 set "ROOT=%~dp0"
 set "DBDIR=%ROOT%databases"
@@ -20,40 +19,39 @@ if not exist "%MGDATA%"  mkdir "%MGDATA%"
 
 :: ── PostgreSQL portable ──────────────────────────────────────────────────────
 if not exist "%PGDIR%\bin\pg_ctl.exe" (
-    echo [1/2] Descargando PostgreSQL... primera vez, ~60MB, espera un momento
+    echo [1/2] Descargando PostgreSQL... ~60MB, espera
     powershell -Command "Invoke-WebRequest -Uri 'https://get.enterprisedb.com/postgresql/postgresql-16.4-1-windows-x64-binaries.zip' -OutFile '%DBDIR%\pg.zip' -UseBasicParsing"
+    if errorlevel 1 ( echo ERROR: fallo la descarga de PostgreSQL & pause & exit /b 1 )
     powershell -Command "Expand-Archive -Path '%DBDIR%\pg.zip' -DestinationPath '%DBDIR%' -Force"
     del "%DBDIR%\pg.zip"
     echo PostgreSQL descargado.
-    echo.
 )
 
 if not exist "%PGDATA%\postgresql.conf" (
-    echo Configurando PostgreSQL por primera vez...
-    "%PGDIR%\bin\initdb.exe" -D "%PGDATA%" -U postgres -E UTF8 -A trust >nul 2>&1
-    "%PGDIR%\bin\pg_ctl.exe" -D "%PGDATA%" -l "%DBDIR%\pg.log" start -w >nul 2>&1
+    echo Configurando PostgreSQL...
+    "%PGDIR%\bin\initdb.exe" -D "%PGDATA%" -U postgres -E UTF8 -A trust
+    if errorlevel 1 ( echo ERROR: fallo initdb & pause & exit /b 1 )
+    "%PGDIR%\bin\pg_ctl.exe" -D "%PGDATA%" -l "%DBDIR%\pg.log" start -w
     timeout /t 2 /nobreak >nul
-    "%PGDIR%\bin\psql.exe" -U postgres -c "CREATE USER uno_pg WITH PASSWORD 'unoLocal2026';" >nul 2>&1
-    "%PGDIR%\bin\psql.exe" -U postgres -c "CREATE DATABASE unojavagame OWNER uno_pg;" >nul 2>&1
+    "%PGDIR%\bin\psql.exe" -U postgres -c "CREATE USER uno_pg WITH PASSWORD 'unoLocal2026';"
+    "%PGDIR%\bin\psql.exe" -U postgres -c "CREATE DATABASE unojavagame OWNER uno_pg;"
     echo PostgreSQL listo.
 ) else (
     "%PGDIR%\bin\pg_ctl.exe" -D "%PGDATA%" status >nul 2>&1
-    if errorlevel 1 (
-        "%PGDIR%\bin\pg_ctl.exe" -D "%PGDATA%" -l "%DBDIR%\pg.log" start -w >nul 2>&1
-    )
+    if errorlevel 1 "%PGDIR%\bin\pg_ctl.exe" -D "%PGDATA%" -l "%DBDIR%\pg.log" start -w
     echo PostgreSQL corriendo.
 )
 
 :: ── MongoDB portable ─────────────────────────────────────────────────────────
 if not exist "%MGDIR%\bin\mongod.exe" (
-    echo [2/2] Descargando MongoDB... primera vez, ~150MB, espera un momento
+    echo [2/2] Descargando MongoDB... ~150MB, espera
     powershell -Command "Invoke-WebRequest -Uri 'https://fastdl.mongodb.org/windows/mongodb-windows-x86_64-7.0.12.zip' -OutFile '%DBDIR%\mg.zip' -UseBasicParsing"
+    if errorlevel 1 ( echo ERROR: fallo la descarga de MongoDB & pause & exit /b 1 )
     powershell -Command "Expand-Archive -Path '%DBDIR%\mg.zip' -DestinationPath '%DBDIR%\mgtmp' -Force"
     for /d %%i in ("%DBDIR%\mgtmp\*") do xcopy "%%i" "%MGDIR%\" /e /i /q >nul
     rmdir /s /q "%DBDIR%\mgtmp"
     del "%DBDIR%\mg.zip"
     echo MongoDB descargado.
-    echo.
 )
 
 tasklist /fi "imagename eq mongod.exe" 2>nul | find "mongod.exe" >nul
@@ -74,7 +72,7 @@ echo MongoDB corriendo.
 
 echo.
 echo ====================================
-echo  Todo listo! Ejecuta el juego.
+echo  Todo listo! Ya puedes jugar.
 echo ====================================
 echo.
 pause
