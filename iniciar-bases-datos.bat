@@ -30,6 +30,7 @@ echo Creando base de datos...
 "%PSQL%" -U postgres -c "CREATE USER uno_pg WITH PASSWORD 'unoLocal2026';" 2>nul
 "%PSQL%" -U postgres -c "CREATE DATABASE unojavagame OWNER uno_pg;" 2>nul
 "%PSQL%" -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE unojavagame TO uno_pg;" 2>nul
+"%PSQL%" -U postgres -d unojavagame -c "GRANT ALL ON SCHEMA public TO uno_pg;" 2>nul
 echo PostgreSQL listo.
 
 :: ── Arrancar MongoDB ─────────────────────────────────────────────────────────
