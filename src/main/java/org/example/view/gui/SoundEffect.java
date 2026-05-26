@@ -16,21 +16,21 @@ public class SoundEffect {
         Thread t = new Thread(() -> {
             music.duck();
             party();
-            speak("UNO!");
+            speak("UNO!!!");
             music.unduck();
         });
         t.setDaemon(true);
         t.start();
     }
 
-    public static void win(MusicPlayer music) {
+    public static void win(MusicPlayer music, String playerName) {
         Thread t = new Thread(() -> {
             music.duck();
             int[] melody = {523, 659, 784, 1046, 784, 1046, 1318};
             int[] dur    = {100, 100, 100, 200,  80,  80,  400};
             for (int i = 0; i < melody.length; i++) tone(melody[i], dur[i], 0.5f);
             party();
-            speak("¡Has ganado!");
+            speak(playerName + " ha ganado!");
             music.unduck();
         });
         t.setDaemon(true);
@@ -41,7 +41,7 @@ public class SoundEffect {
     public static void party() {
         int[] freqs = {880, 1046, 784, 1318, 659, 1046, 880, 1175, 988, 1318};
         int[] durs  = { 60,   50,  60,   50,  60,   50,  60,   50,  60,   80};
-        for (int i = 0; i < freqs.length; i++) tone(freqs[i], durs[i], 0.8f);
+        for (int i = 0; i < freqs.length; i++) tone(freqs[i], durs[i], 1.0f);
     }
 
     // TTS via PowerShell (Windows)

@@ -115,7 +115,7 @@ public class GUIGameController {
                 allTimeScores.merge(current.getName(), 1, Integer::sum);
                 fileManager.saveScores(allTimeScores);
 
-                SoundEffect.win(music);
+                SoundEffect.win(music, current.getName());
                 sleep(3000);
                 music.stop();
                 boolean restart = frame.showWinnerOverlay(current);
