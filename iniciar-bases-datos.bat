@@ -1,67 +1,55 @@
 @echo off
 chcp 65001 >nul
 
-set "ROOT=%~dp0"
-set "DBDIR=%ROOT%databases"
-set "PGDIR=%DBDIR%\pgsql"
-set "PGDATA=%DBDIR%\pgdata"
-set "MGDIR=%DBDIR%\mongodb"
-set "MGDATA=%DBDIR%\mongodata"
-
 echo ====================================
 echo   UNO - Iniciando bases de datos
 echo ====================================
 echo.
 
-if not exist "%DBDIR%"   mkdir "%DBDIR%"
-if not exist "%PGDATA%"  mkdir "%PGDATA%"
-if not exist "%MGDATA%"  mkdir "%MGDATA%"
-
-:: ── PostgreSQL portable ──────────────────────────────────────────────────────
-if not exist "%PGDIR%\bin\pg_ctl.exe" (
-    echo [1/2] Descargando PostgreSQL... ~60MB, espera
-    powershell -Command "Invoke-WebRequest -Uri 'https://get.enterprisedb.com/postgresql/postgresql-16.4-1-windows-x64-binaries.zip' -OutFile '%DBDIR%\pg.zip' -UseBasicParsing"
-    if errorlevel 1 ( echo ERROR: fallo la descarga de PostgreSQL & pause & exit /b 1 )
-    powershell -Command "Expand-Archive -Path '%DBDIR%\pg.zip' -DestinationPath '%DBDIR%' -Force"
-    del "%DBDIR%\pg.zip"
-    echo PostgreSQL descargado.
+:: ── Buscar psql.exe ──────────────────────────────────────────────────────────
+set "PSQL="
+for /f "tokens=*" %%i in ('where psql 2^>nul') do set "PSQL=%%i"
+if "%PSQL%"=="" (
+    for /r "C:\Program Files\PostgreSQL" %%i in (psql.exe) do set "PSQL=%%i"
 )
-
-if not exist "%PGDATA%\postgresql.conf" (
-    echo Configurando PostgreSQL...
-    "%PGDIR%\bin\initdb.exe" -D "%PGDATA%" -U postgres -E UTF8 -A trust
-    if errorlevel 1 ( echo ERROR: fallo initdb & pause & exit /b 1 )
-    "%PGDIR%\bin\pg_ctl.exe" -D "%PGDATA%" -l "%DBDIR%\pg.log" start -w
-    timeout /t 2 /nobreak >nul
-    "%PGDIR%\bin\psql.exe" -U postgres -c "CREATE USER uno_pg WITH PASSWORD 'unoLocal2026';"
-    "%PGDIR%\bin\psql.exe" -U postgres -c "CREATE DATABASE unojavagame OWNER uno_pg;"
-    echo PostgreSQL listo.
-) else (
-    "%PGDIR%\bin\pg_ctl.exe" -D "%PGDATA%" status >nul 2>&1
-    if errorlevel 1 "%PGDIR%\bin\pg_ctl.exe" -D "%PGDATA%" -l "%DBDIR%\pg.log" start -w
-    echo PostgreSQL corriendo.
+if "%PSQL%"=="" (
+    echo ERROR: No se encontro PostgreSQL instalado.
+    echo Instala PostgreSQL o abre pgAdmin para verificar que esta instalado.
+    pause & exit /b 1
 )
+echo PostgreSQL encontrado: %PSQL%
 
-:: ── MongoDB portable ─────────────────────────────────────────────────────────
-if not exist "%MGDIR%\bin\mongod.exe" (
-    echo [2/2] Descargando MongoDB... ~150MB, espera
-    powershell -Command "Invoke-WebRequest -Uri 'https://fastdl.mongodb.org/windows/mongodb-windows-x86_64-7.0.12.zip' -OutFile '%DBDIR%\mg.zip' -UseBasicParsing"
-    if errorlevel 1 ( echo ERROR: fallo la descarga de MongoDB & pause & exit /b 1 )
-    powershell -Command "Expand-Archive -Path '%DBDIR%\mg.zip' -DestinationPath '%DBDIR%\mgtmp' -Force"
-    for /d %%i in ("%DBDIR%\mgtmp\*") do xcopy "%%i" "%MGDIR%\" /e /i /q >nul
-    rmdir /s /q "%DBDIR%\mgtmp"
-    del "%DBDIR%\mg.zip"
-    echo MongoDB descargado.
-)
+:: ── Pedir contrasena de postgres ─────────────────────────────────────────────
+echo.
+set /p "PGPASS=Introduce la contrasena de postgres (la que usas en pgAdmin): "
+set "PGPASSWORD=%PGPASS%"
 
-tasklist /fi "imagename eq mongod.exe" 2>nul | find "mongod.exe" >nul
+:: ── Crear usuario y base de datos ────────────────────────────────────────────
+echo.
+echo Creando base de datos...
+"%PSQL%" -U postgres -c "CREATE USER uno_pg WITH PASSWORD 'unoLocal2026';" 2>nul
+"%PSQL%" -U postgres -c "CREATE DATABASE unojavagame OWNER uno_pg;" 2>nul
+"%PSQL%" -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE unojavagame TO uno_pg;" 2>nul
+echo PostgreSQL listo.
+
+:: ── Arrancar MongoDB ─────────────────────────────────────────────────────────
+echo.
+echo Arrancando MongoDB...
+net start MongoDB >nul 2>&1
 if errorlevel 1 (
-    start /b "" "%MGDIR%\bin\mongod.exe" --dbpath "%MGDATA%" --port 27017 --logpath "%DBDIR%\mongo.log" --logappend
-    timeout /t 2 /nobreak >nul
+    sc query MongoDB >nul 2>&1
+    if errorlevel 1 (
+        echo AVISO: MongoDB no esta instalado como servicio.
+        echo Arrancalo manualmente desde MongoDB Compass o como servicio.
+    ) else (
+        echo MongoDB ya estaba corriendo.
+    )
+) else (
+    echo MongoDB arrancado.
 )
-echo MongoDB corriendo.
 
-:: ── .env ─────────────────────────────────────────────────────────────────────
+:: ── Escribir .env ─────────────────────────────────────────────────────────────
+set "ROOT=%~dp0"
 (
     echo POSTGRES_URL=jdbc:postgresql://localhost:5432/unojavagame
     echo POSTGRES_USER=uno_pg
@@ -69,6 +57,7 @@ echo MongoDB corriendo.
     echo MONGO_URI=mongodb://localhost:27017/unojavagame
     echo MONGO_DB=unojavagame
 ) > "%ROOT%.env"
+echo .env configurado.
 
 echo.
 echo ====================================
