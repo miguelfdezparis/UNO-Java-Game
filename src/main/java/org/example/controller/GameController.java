@@ -4,6 +4,7 @@ import org.example.db.BarajaDAO;
 import org.example.db.MongoBarajaDAO;
 import org.example.db.PostgresBarajaDAO;
 import org.example.model.*;
+import org.example.utils.BarajaCatalog;
 import org.example.utils.CartaConverter;
 import org.example.utils.FileManager;
 import org.example.view.ConsoleView;
@@ -26,6 +27,7 @@ public class GameController {
         allTimeScores = fileManager.loadScores();
         int dbChoice = view.askDatabase();
         barajaDAO = (dbChoice == 1) ? new PostgresBarajaDAO() : new MongoBarajaDAO();
+        barajaDAO.inicializar(BarajaCatalog.generar());
     }
 
     // bucle del menu principal, se queda aqui hasta que el usuario elige salir
@@ -48,13 +50,7 @@ public class GameController {
     private void runGame() {
         ArrayList<Player> players = setupPlayers();
         ArrayList<Carta> catalogo = barajaDAO.obtenerBaraja();
-        GameState state;
-        if (catalogo.isEmpty()) {
-            view.showMessage("La BD no devolvio cartas, usando mazo estandar.");
-            state = new GameState(players);
-        } else {
-            state = new GameState(players, CartaConverter.toCards(catalogo));
-        }
+        GameState state = new GameState(players, CartaConverter.toCards(catalogo));
         state.dealInitialCards();
         gameLoop(state);
         fileManager.saveScores(allTimeScores);
