@@ -1,14 +1,17 @@
 package org.example.view.gui;
 
-import javazoom.jl.player.Player;
+import javazoom.jl.decoder.*;
+
+import javax.sound.sampled.*;
 import java.io.InputStream;
 
 public class MusicPlayer {
 
-    private static final int SKIP_BYTES = 10 * 16_000; // ~10s at 128kbps
+    private static final int SKIP_BYTES = 10 * 16_000;
 
-    private volatile boolean running = false;
-    private volatile Player  current = null;
+    private volatile float        volumeScale = 1.0f;
+    private volatile boolean      running     = false;
+    private volatile SourceDataLine line       = null;
     private Thread playThread;
 
     public void play() {
@@ -19,8 +22,39 @@ public class MusicPlayer {
                 try (InputStream raw = MusicPlayer.class.getResourceAsStream("/music.mp3")) {
                     if (raw == null) return;
                     raw.skip(SKIP_BYTES);
-                    current = new Player(raw);
-                    current.play();
+
+                    Bitstream  bitstream = new Bitstream(raw);
+                    Decoder    decoder   = new Decoder();
+                    Header     firstFrame = bitstream.readFrame();
+                    if (firstFrame == null) break;
+
+                    int sampleRate = firstFrame.getSampleRate();
+                    int channels   = firstFrame.mode() == Header.SINGLE_CHANNEL ? 1 : 2;
+                    AudioFormat fmt = new AudioFormat(sampleRate, 16, channels, true, false);
+
+                    line = AudioSystem.getSourceDataLine(fmt);
+                    line.open(fmt, sampleRate * channels * 2 / 5); // 200ms buffer
+                    line.start();
+
+                    Header frame = firstFrame;
+                    while (running && frame != null) {
+                        SampleBuffer out = (SampleBuffer) decoder.decodeFrame(frame, bitstream);
+                        short[] samples = out.getBuffer();
+                        int len = out.getBufferLength();
+                        byte[] bytes = new byte[len * 2];
+                        float vol = volumeScale;
+                        for (int i = 0; i < len; i++) {
+                            short s = (short) (samples[i] * vol);
+                            bytes[i * 2]     = (byte) (s & 0xFF);
+                            bytes[i * 2 + 1] = (byte) (s >> 8);
+                        }
+                        line.write(bytes, 0, bytes.length);
+                        bitstream.closeFrame();
+                        frame = bitstream.readFrame();
+                    }
+                    line.drain();
+                    line.close();
+                    line = null;
                 } catch (Exception e) {
                     if (!running) break;
                 }
@@ -30,9 +64,12 @@ public class MusicPlayer {
         playThread.start();
     }
 
+    public void duck()   { volumeScale = 0.12f; }
+    public void unduck() { volumeScale = 1.0f; }
+
     public void stop() {
         running = false;
-        Player p = current;
-        if (p != null) p.close();
+        SourceDataLine l = line;
+        if (l != null) l.close();
     }
 }

@@ -116,9 +116,10 @@ public class GUIGameController {
                 allTimeScores.merge(current.getName(), 1, Integer::sum);
                 fileManager.saveScores(allTimeScores);
 
-                sleep(400);
-                boolean restart = frame.showWinnerOverlay(current);
+                SoundEffect.win(music);
+                sleep(3000);
                 music.stop();
+                boolean restart = frame.showWinnerOverlay(current);
                 if (restart) {
                     SwingUtilities.invokeLater(() -> {
                         SetupDialog.SetupConfig newConfig = SetupDialog.show(frame);
@@ -132,7 +133,7 @@ public class GUIGameController {
             }
 
             if (current.getHand().size() == 1) {
-                SoundEffect.uno();
+                SoundEffect.uno(music);
                 msg("⚠ ¡UNO! — a " + current.getName() + " le queda 1 carta.");
             }
 
