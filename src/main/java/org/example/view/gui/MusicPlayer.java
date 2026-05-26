@@ -16,11 +16,15 @@ public class MusicPlayer {
         playThread = new Thread(() -> {
             while (running) {
                 try (InputStream raw = MusicPlayer.class.getResourceAsStream("/music.mp3")) {
-                    if (raw == null) return; // archivo no encontrado, silencio
+                    if (raw == null) {
+                        System.err.println("[MusicPlayer] music.mp3 no encontrado en resources");
+                        return;
+                    }
                     raw.skip(SKIP_BYTES);
                     current = new Player(raw);
                     current.play();
                 } catch (Exception e) {
+                    System.err.println("[MusicPlayer] Error: " + e);
                     if (!running) break;
                 }
             }
