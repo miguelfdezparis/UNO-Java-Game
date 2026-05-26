@@ -50,6 +50,10 @@ public class GameController {
     private void runGame() {
         ArrayList<Player> players = setupPlayers();
         ArrayList<Carta> catalogo = barajaDAO.obtenerBaraja();
+        if (catalogo.isEmpty()) {
+            view.showMessage("Error: no se pudieron cargar las cartas de la BD. Comprueba que la base de datos esta corriendo.");
+            return;
+        }
         GameState state = new GameState(players, CartaConverter.toCards(catalogo));
         state.dealInitialCards();
         gameLoop(state);

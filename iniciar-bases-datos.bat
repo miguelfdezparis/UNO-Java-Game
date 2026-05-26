@@ -37,9 +37,15 @@ echo PostgreSQL listo.
 echo.
 echo Arrancando MongoDB...
 net start MongoDB >nul 2>&1
-sc query MongoDB >nul 2>&1
+net start mongod >nul 2>&1
+net start "MongoDB Server" >nul 2>&1
+:: Verificar si mongod.exe esta corriendo
+tasklist /fi "imagename eq mongod.exe" 2>nul | find "mongod.exe" >nul
 if errorlevel 1 (
-    echo AVISO: MongoDB no detectado como servicio, arrancalo desde Compass.
+    echo AVISO: MongoDB no esta corriendo.
+    echo Abre MongoDB Compass y asegurate de que el servidor este activo.
+    echo Si no tienes MongoDB instalado, descargalo de https://www.mongodb.com/try/download/community
+    pause
 ) else (
     echo MongoDB corriendo.
 )
