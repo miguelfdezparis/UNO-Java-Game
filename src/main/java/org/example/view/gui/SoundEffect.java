@@ -6,13 +6,53 @@ public class SoundEffect {
 
     public static void playCard()  { tone(880, 80, 0.3f); }
     public static void drawCard()  { tone(330, 120, 0.25f); }
-    public static void uno()       { tone(1046, 80, 0.4f); tone(1318, 150, 0.5f); }
     public static void skip()      { tone(500, 60, 0.3f); tone(350, 100, 0.3f); }
     public static void reverse()   { tone(600, 80, 0.3f); tone(750, 80, 0.3f); }
     public static void drawTwo()   { tone(330, 80, 0.3f); tone(330, 80, 0.3f); }
     public static void drawFour()  { for (int i = 0; i < 4; i++) tone(280, 60, 0.3f); }
     public static void wild()      { int[] f = {600,700,800,900}; for (int x : f) tone(x, 60, 0.35f); }
-    public static void win()       { int[] f = {523,659,784,1046}; for (int x : f) tone(x, 130, 0.5f); }
+
+    public static void uno() {
+        Thread t = new Thread(() -> {
+            party();
+            speak("UNO!");
+        });
+        t.setDaemon(true);
+        t.start();
+    }
+
+    public static void win() {
+        Thread t = new Thread(() -> {
+            int[] melody = {523, 659, 784, 1046, 784, 1046, 1318};
+            int[] dur    = {100, 100, 100, 200,  80,  80,  400};
+            for (int i = 0; i < melody.length; i++) tone(melody[i], dur[i], 0.5f);
+            party();
+            speak("¡Has ganado!");
+        });
+        t.setDaemon(true);
+        t.start();
+    }
+
+    // Rafaga de tonos festivos tipo confeti
+    public static void party() {
+        int[] freqs = {880, 1046, 784, 1318, 659, 1046, 880, 1175, 988, 1318};
+        int[] durs  = { 60,   50,  60,   50,  60,   50,  60,   50,  60,   80};
+        for (int i = 0; i < freqs.length; i++) tone(freqs[i], durs[i], 0.4f);
+    }
+
+    // TTS via PowerShell (Windows)
+    public static void speak(String text) {
+        try {
+            String script = String.format(
+                "Add-Type -AssemblyName System.Speech; " +
+                "$s = New-Object System.Speech.Synthesis.SpeechSynthesizer; " +
+                "$s.Rate = 1; $s.Volume = 100; $s.Speak('%s');", text);
+            new ProcessBuilder("powershell", "-NoProfile", "-Command", script)
+                .redirectErrorStream(true)
+                .start()
+                .waitFor();
+        } catch (Exception ignored) {}
+    }
 
     private static void tone(int hz, int ms, float vol) {
         Thread t = new Thread(() -> {
