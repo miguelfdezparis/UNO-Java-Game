@@ -16,7 +16,7 @@ public class SoundEffect {
         Thread t = new Thread(() -> {
             music.duck();
             party();
-            speakSsml("<speak>Queda una carta... <prosody volume='loud' rate='slow' pitch='high'>UNOOO!</prosody></speak>");
+            speakUno();
             music.unduck();
         });
         t.setDaemon(true);
@@ -58,13 +58,14 @@ public class SoundEffect {
         } catch (Exception ignored) {}
     }
 
-    // TTS con SSML para énfasis (Windows)
-    public static void speakSsml(String ssml) {
+    // "Queda una carta" normal + "UNOOO!" lento y potente
+    private static void speakUno() {
         try {
-            String script = String.format(
+            String script =
                 "Add-Type -AssemblyName System.Speech; " +
                 "$s = New-Object System.Speech.Synthesis.SpeechSynthesizer; " +
-                "$s.Volume = 100; $s.SpeakSsml('%s');", ssml.replace("'", "\""));
+                "$s.Volume = 100; $s.Rate = 1; $s.Speak('Queda una carta...'); " +
+                "$s.Rate = -3; $s.Volume = 100; $s.Speak('UNOOO!');";
             new ProcessBuilder("powershell", "-NoProfile", "-Command", script)
                 .redirectErrorStream(true)
                 .start()
