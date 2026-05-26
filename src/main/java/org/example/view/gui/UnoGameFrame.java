@@ -402,14 +402,25 @@ public class UnoGameFrame extends JFrame {
         });
     }
 
-    /** Shows a full-screen overlay announcing the winner. */
-    public void showWinnerOverlay(Player winner) {
-        SwingUtilities.invokeLater(() -> {
-            JOptionPane.showMessageDialog(this,
-                buildWinnerPanel(winner),
-                "¡Fin del juego!",
-                JOptionPane.PLAIN_MESSAGE);
-        });
+    /**
+     * Shows a full-screen overlay announcing the winner.
+     * Blocks until the user chooses; returns true if they want to play again.
+     */
+    public boolean showWinnerOverlay(Player winner) {
+        boolean[] restart = {false};
+        try {
+            SwingUtilities.invokeAndWait(() -> {
+                Object[] options = {"Jugar de nuevo", "Salir"};
+                int choice = JOptionPane.showOptionDialog(this,
+                    buildWinnerPanel(winner),
+                    "¡Fin del juego!",
+                    JOptionPane.DEFAULT_OPTION,
+                    JOptionPane.PLAIN_MESSAGE,
+                    null, options, options[0]);
+                restart[0] = (choice == 0);
+            });
+        } catch (Exception ignored) {}
+        return restart[0];
     }
 
     private JPanel buildWinnerPanel(Player winner) {
