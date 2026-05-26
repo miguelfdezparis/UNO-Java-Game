@@ -108,7 +108,6 @@ public class GUIGameController {
 
             // Check winner
             if (current.getHand().isEmpty()) {
-                SoundEffect.win();
                 updateFrame(state, current);
                 msg("🏆 ¡" + current.getName() + " gana la partida!");
                 state.setGameRunning(false);
