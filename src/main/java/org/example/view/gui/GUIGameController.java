@@ -5,8 +5,6 @@ import org.example.model.*;
 import org.example.utils.*;
 
 import javax.swing.*;
-import java.awt.Desktop;
-import java.net.URI;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -65,20 +63,14 @@ public class GUIGameController {
         frame.setCardCallback(idx -> inputQueue.add(idx));
     }
 
+    private final MusicPlayer music = new MusicPlayer();
+
     /** Starts the game loop in a background thread. */
     public void start() {
-        openMusic();
+        music.play();
         Thread gameThread = new Thread(this::gameLoop, "uno-game-loop");
         gameThread.setDaemon(true);
         gameThread.start();
-    }
-
-    private void openMusic() {
-        try {
-            if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
-                Desktop.getDesktop().browse(new URI("https://www.youtube.com/watch?v=rlsKDdJmTIc&list=RDrlsKDdJmTIc&start_radio=1"));
-            }
-        } catch (Exception ignored) {}
     }
 
     // ─── Main game loop ───────────────────────────────────────────────────────
@@ -125,6 +117,7 @@ public class GUIGameController {
 
                 sleep(400);
                 boolean restart = frame.showWinnerOverlay(current);
+                music.stop();
                 if (restart) {
                     SwingUtilities.invokeLater(() -> {
                         SetupDialog.SetupConfig newConfig = SetupDialog.show(frame);
