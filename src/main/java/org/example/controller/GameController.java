@@ -48,8 +48,13 @@ public class GameController {
     private void runGame() {
         ArrayList<Player> players = setupPlayers();
         ArrayList<Carta> catalogo = barajaDAO.obtenerBaraja();
-        ArrayList<Card> cardList = CartaConverter.toCards(catalogo);
-        GameState state = new GameState(players, cardList);
+        GameState state;
+        if (catalogo.isEmpty()) {
+            view.showMessage("La BD no devolvio cartas, usando mazo estandar.");
+            state = new GameState(players);
+        } else {
+            state = new GameState(players, CartaConverter.toCards(catalogo));
+        }
         state.dealInitialCards();
         gameLoop(state);
         fileManager.saveScores(allTimeScores);
