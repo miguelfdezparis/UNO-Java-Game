@@ -108,6 +108,7 @@ public class GUIGameController {
 
             // Check winner
             if (current.getHand().isEmpty()) {
+                SoundEffect.win();
                 updateFrame(state, current);
                 msg("🏆 ¡" + current.getName() + " gana la partida!");
                 state.setGameRunning(false);
@@ -131,6 +132,7 @@ public class GUIGameController {
             }
 
             if (current.getHand().size() == 1) {
+                SoundEffect.uno();
                 msg("⚠ ¡UNO! — a " + current.getName() + " le queda 1 carta.");
             }
 
@@ -162,6 +164,7 @@ public class GUIGameController {
         if (best != null) {
             computer.getHand().playCard(bestIdx);
             state.playCard(best);
+            SoundEffect.playCard();
             msg(computer.getName() + " jugó " + cardName(best));
             handleWild(best, state, computer);
             return best;
@@ -169,6 +172,7 @@ public class GUIGameController {
 
         Card drawn = state.drawFromDeck();
         computer.getHand().addCard(drawn);
+        SoundEffect.drawCard();
         msg(computer.getName() + " robó una carta.");
 
         if (drawn.isCompatible(state.getTopCard(), state.getCurrentColor())) {
@@ -195,6 +199,7 @@ public class GUIGameController {
             // Draw a card
             Card drawn = state.drawFromDeck();
             human.getHand().addCard(drawn);
+            SoundEffect.drawCard();
             msg(human.getName() + " robó una carta.");
 
             if (drawn.isCompatible(state.getTopCard(), state.getCurrentColor())) {
@@ -224,6 +229,7 @@ public class GUIGameController {
         // Play a card
         Card played = human.getHand().playCard(choice);
         state.playCard(played);
+        SoundEffect.playCard();
         msg(human.getName() + " jugó " + cardName(played));
         handleWild(played, state, human);
 
@@ -236,6 +242,7 @@ public class GUIGameController {
 
     private void handleWild(Card card, GameState state, Player player) {
         if (card.getColor() != Color.BLACK) return;
+        SoundEffect.wild();
 
         if (player.isComputer()) {
             Color chosen = computerPickColor(player);
@@ -259,11 +266,13 @@ public class GUIGameController {
     private void applyEffect(Card card, GameState state, Player who) {
         switch (card.getValue()) {
             case SKIP -> {
+                SoundEffect.skip();
                 state.nextPlayer();
                 msg(state.getCurrentPlayer().getName() + " pierde el turno.");
                 state.nextPlayer();
             }
             case REVERSE -> {
+                SoundEffect.reverse();
                 state.reverseDirection();
                 if (state.getPlayers().size() == 2) {
                     msg("Reverso (2 jugadores = salta turno).");
@@ -274,6 +283,7 @@ public class GUIGameController {
                 }
             }
             case DRAW_TWO -> {
+                SoundEffect.drawTwo();
                 state.nextPlayer();
                 Player victim = state.getCurrentPlayer();
                 victim.getHand().addCard(state.drawFromDeck());
@@ -282,6 +292,7 @@ public class GUIGameController {
                 state.nextPlayer();
             }
             case WILD_DRAW_FOUR -> {
+                SoundEffect.drawFour();
                 state.nextPlayer();
                 Player victim = state.getCurrentPlayer();
                 for (int i = 0; i < 4; i++) victim.getHand().addCard(state.drawFromDeck());
