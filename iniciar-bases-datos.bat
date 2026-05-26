@@ -10,7 +10,9 @@ echo.
 set "PSQL="
 for /f "tokens=*" %%i in ('where psql 2^>nul') do set "PSQL=%%i"
 if "%PSQL%"=="" (
-    for /r "C:\Program Files\PostgreSQL" %%i in (psql.exe) do set "PSQL=%%i"
+    for /d %%v in ("C:\Program Files\PostgreSQL\*") do (
+        if exist "%%v\bin\psql.exe" set "PSQL=%%v\bin\psql.exe"
+    )
 )
 if "%PSQL%"=="" (
     echo ERROR: No se encontro PostgreSQL instalado.
