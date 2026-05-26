@@ -203,14 +203,10 @@ public class GUIGameController {
             msg(human.getName() + " robó una carta.");
 
             if (drawn.isCompatible(state.getTopCard(), state.getCurrentColor())) {
-                // Ask if they want to play the drawn card
                 boolean[] playIt = {false};
                 CountDownLatch latch = new CountDownLatch(1);
                 SwingUtilities.invokeLater(() -> {
-                    int ans = JOptionPane.showConfirmDialog(frame,
-                        "Robaste: " + cardName(drawn) + "\n¿La juegas ahora?",
-                        "Carta jugable", JOptionPane.YES_NO_OPTION);
-                    playIt[0] = (ans == JOptionPane.YES_OPTION);
+                    playIt[0] = DrawnCardDialog.show(frame, drawn);
                     latch.countDown();
                 });
                 try { latch.await(); } catch (InterruptedException ignored) {}
