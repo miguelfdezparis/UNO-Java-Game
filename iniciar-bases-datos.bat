@@ -6,7 +6,7 @@ echo   UNO - Iniciando bases de datos
 echo ====================================
 echo.
 
-:: ── Buscar psql.exe ──────────────────────────────────────────────────────────
+:: ── Buscar psql.exe ───────────────────────────────────────────────────────────
 set "PSQL="
 for /f "tokens=*" %%i in ('where psql 2^>nul') do set "PSQL=%%i"
 if "%PSQL%"=="" (
@@ -14,47 +14,44 @@ if "%PSQL%"=="" (
 )
 if "%PSQL%"=="" (
     echo ERROR: No se encontro PostgreSQL instalado.
-    echo Instala PostgreSQL o abre pgAdmin para verificar que esta instalado.
     pause & exit /b 1
 )
-echo PostgreSQL encontrado: %PSQL%
 
-:: ── Pedir contrasena de postgres ─────────────────────────────────────────────
+:: ── Pedir contrasena de postgres ──────────────────────────────────────────────
 echo.
-set /p "PGPASS=Introduce la contrasena de postgres (la que usas en pgAdmin): "
+set /p "PGPASS=Contrasena de postgres (la que usas en pgAdmin): "
 set "PGPASSWORD=%PGPASS%"
 
-:: ── Crear base de datos ───────────────────────────────────────────────────────
+:: ── Crear BD y schema ─────────────────────────────────────────────────────────
 echo.
 echo Configurando base de datos...
 "%PSQL%" -U postgres -c "CREATE DATABASE unojavagame;" 2>nul
+"%PSQL%" -U postgres -d unojavagame -f "%~dp0sql\schema.sql"
+if errorlevel 1 (
+    echo ERROR: fallo al crear la tabla. Comprueba la contrasena.
+    pause & exit /b 1
+)
 echo PostgreSQL listo.
 
-:: ── Arrancar MongoDB ─────────────────────────────────────────────────────────
+:: ── Arrancar MongoDB ──────────────────────────────────────────────────────────
 echo.
 echo Arrancando MongoDB...
 net start MongoDB >nul 2>&1
+sc query MongoDB >nul 2>&1
 if errorlevel 1 (
-    sc query MongoDB >nul 2>&1
-    if errorlevel 1 (
-        echo AVISO: MongoDB no esta instalado como servicio.
-        echo Arrancalo manualmente desde MongoDB Compass o como servicio.
-    ) else (
-        echo MongoDB ya estaba corriendo.
-    )
+    echo AVISO: MongoDB no detectado como servicio, arrancalo desde Compass.
 ) else (
-    echo MongoDB arrancado.
+    echo MongoDB corriendo.
 )
 
 :: ── Escribir .env ─────────────────────────────────────────────────────────────
-set "ROOT=%~dp0"
 (
     echo POSTGRES_URL=jdbc:postgresql://localhost:5432/unojavagame
     echo POSTGRES_USER=postgres
     echo POSTGRES_PASS=%PGPASS%
     echo MONGO_URI=mongodb://localhost:27017/unojavagame
     echo MONGO_DB=unojavagame
-) > "%ROOT%.env"
+) > "%~dp0.env"
 echo .env configurado.
 
 echo.

@@ -8,32 +8,22 @@ public class PostgresBarajaDAO implements BarajaDAO {
 
     @Override
     public void inicializar(ArrayList<Carta> catalogo) {
+        String insert = "INSERT INTO cartas (tipo, valor, color, apariciones) VALUES (?, ?, ?, ?) " +
+                        "ON CONFLICT (tipo, valor, color) DO UPDATE SET apariciones = EXCLUDED.apariciones";
         try (Connection con = DatabaseConnection.conectar();
-             Statement st = con.createStatement()) {
+             Statement st = con.createStatement();
+             PreparedStatement ps = con.prepareStatement(insert)) {
 
-            st.executeUpdate("DROP TABLE IF EXISTS cartas");
-            st.executeUpdate(
-                "CREATE TABLE cartas (" +
-                "  id          SERIAL PRIMARY KEY," +
-                "  tipo        VARCHAR(20) NOT NULL," +
-                "  valor       VARCHAR(20) NOT NULL," +
-                "  color       VARCHAR(20) NOT NULL," +
-                "  apariciones INT         NOT NULL," +
-                "  UNIQUE(tipo, valor, color)" +
-                ")"
-            );
+            st.executeUpdate("DELETE FROM cartas");
 
-            String sql = "INSERT INTO cartas (tipo, valor, color, apariciones) VALUES (?, ?, ?, ?)";
-            try (PreparedStatement ps = con.prepareStatement(sql)) {
-                for (Carta c : catalogo) {
-                    ps.setString(1, c.getTipo());
-                    ps.setString(2, c.getValor());
-                    ps.setString(3, c.getColor());
-                    ps.setInt(4, c.getApariciones());
-                    ps.addBatch();
-                }
-                ps.executeBatch();
+            for (Carta c : catalogo) {
+                ps.setString(1, c.getTipo());
+                ps.setString(2, c.getValor());
+                ps.setString(3, c.getColor());
+                ps.setInt(4, c.getApariciones());
+                ps.addBatch();
             }
+            ps.executeBatch();
 
         } catch (SQLException e) {
             System.err.println("Error al inicializar PostgreSQL: " + e.getMessage());
