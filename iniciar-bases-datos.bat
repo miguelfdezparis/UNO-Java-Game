@@ -26,11 +26,11 @@ set "PGPASSWORD=%PGPASS%"
 
 :: ── Crear usuario y base de datos ────────────────────────────────────────────
 echo.
-echo Creando base de datos...
-"%PSQL%" -U postgres -c "CREATE USER uno_pg WITH PASSWORD 'unoLocal2026';" 2>nul
-"%PSQL%" -U postgres -c "CREATE DATABASE unojavagame OWNER uno_pg;" 2>nul
-"%PSQL%" -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE unojavagame TO uno_pg;" 2>nul
-"%PSQL%" -U postgres -d unojavagame -c "GRANT ALL ON SCHEMA public TO uno_pg;" 2>nul
+echo Configurando base de datos...
+"%PSQL%" -U postgres -c "CREATE USER uno_pg WITH PASSWORD 'unoLocal2026';"
+"%PSQL%" -U postgres -c "CREATE DATABASE unojavagame OWNER uno_pg;"
+"%PSQL%" -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE unojavagame TO uno_pg;"
+"%PSQL%" -U postgres -d unojavagame -c "GRANT ALL ON SCHEMA public TO uno_pg;"
 echo PostgreSQL listo.
 
 :: ── Arrancar MongoDB ─────────────────────────────────────────────────────────
