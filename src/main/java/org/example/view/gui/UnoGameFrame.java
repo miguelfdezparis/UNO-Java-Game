@@ -13,6 +13,7 @@ import java.util.List;
 import java.awt.image.BufferedImage;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import javax.swing.Timer;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
