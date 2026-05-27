@@ -16,6 +16,22 @@
         <argLine>-Dfile.encoding=UTF-8 -Dstdout.encoding=UTF-8 -Duser.language=es -Duser.country=ES</argLine>
     </properties>
 
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.13.0</version>
+                <configuration>
+                    <encoding>UTF-8</encoding>
+                    <compilerArgs>
+                        <arg>-J-Dfile.encoding=UTF-8</arg>
+                    </compilerArgs>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
     <dependencies>
         <dependency>
             <groupId>org.postgresql</groupId>
