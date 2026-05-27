@@ -314,11 +314,26 @@ public class UnoGameFrame extends JFrame {
     }
 
     private JButton buildMusicButton() {
-        JButton btn = new JButton("♫");
-        btn.setFont(new Font("SansSerif", Font.BOLD, 17));
+        JButton btn = new JButton("♫") {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,      RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+                // "Segoe UI Symbol" (Windows) has musical glyphs; Dialog falls back via Java composite font
+                Font f = new Font("Segoe UI Symbol", Font.BOLD, 16);
+                if (!f.canDisplay('♫')) f = new Font("Dialog", Font.BOLD, 16);
+                g2.setFont(f);
+                g2.setColor(getForeground());
+                String s = getText();
+                FontMetrics fm = g2.getFontMetrics();
+                g2.drawString(s,
+                    (getWidth()  - fm.stringWidth(s)) / 2.0f,
+                    (getHeight() + fm.getAscent() - fm.getDescent()) / 2.0f);
+                g2.dispose();
+            }
+        };
         btn.setForeground(TEXT);
         btn.setOpaque(false);
-        btn.setBackground(new Color(8, 30, 12));
         btn.setBorderPainted(false);
         btn.setContentAreaFilled(false);
         btn.setFocusPainted(false);
