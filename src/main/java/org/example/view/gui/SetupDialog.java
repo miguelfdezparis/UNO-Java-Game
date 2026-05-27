@@ -108,7 +108,7 @@ public class SetupDialog extends JDialog {
             @Override protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(isModel().isRollover()
+                g2.setColor(getModel().isRollover()
                     ? new Color(255, 255, 255, 40) : new Color(255, 255, 255, 15));
                 g2.fill(new RoundRectangle2D.Float(0, 0, getWidth(), getHeight(), 8, 8));
                 g2.setFont(getFont());
@@ -185,7 +185,7 @@ public class SetupDialog extends JDialog {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 boolean active = card.equals(cardLayout == null ? "" : activeCard());
-                Color bg = active ? TAB_ACT : (isModel().isRollover() ? new Color(50, 65, 110) : TAB_IDLE);
+                Color bg = active ? TAB_ACT : (getModel().isRollover() ? new Color(50, 65, 110) : TAB_IDLE);
                 g2.setColor(bg);
                 g2.fill(new RoundRectangle2D.Float(0, 0, getWidth(), getHeight() + 6, 10, 10));
                 g2.setFont(getFont());
