@@ -45,16 +45,12 @@ public class GUIGameController {
                     : new MongoBarajaDAO();
                 dao.inicializar(BarajaCatalog.generar());
                 ArrayList<Carta> catalog = dao.obtenerBaraja();
-                if (!catalog.isEmpty()) {
-                    cards = CartaConverter.toCards(catalog);
-                }
+                if (!catalog.isEmpty()) cards = CartaConverter.toCards(catalog);
             } catch (Exception e) {
                 SwingUtilities.invokeLater(() ->
                     JOptionPane.showMessageDialog(frame,
                         "No se pudo conectar a la BD (" + e.getMessage() + ").\n" +
-                        "Usando mazo local.",
-                        "Aviso",
-                        JOptionPane.WARNING_MESSAGE));
+                        "Usando mazo local.", "Aviso", JOptionPane.WARNING_MESSAGE));
             }
         }
         this.deckCards = cards;
@@ -67,6 +63,27 @@ public class GUIGameController {
         Thread gameThread = new Thread(this::gameLoop, "uno-game-loop");
         gameThread.setDaemon(true);
         gameThread.start();
+    }
+
+    // ─── Safe draw (handles empty deck + discard edge case) ───────────────────
+
+    /**
+     * Draws a card from the deck. GameState automatically recycles the discard
+     * pile when the deck is empty. Returns null only in the extreme edge case
+     * where both deck AND discard pile are exhausted (virtually impossible in
+     * a normal UNO game).
+     */
+    private Card safeDraw(GameState state) {
+        if (state.getDeck().isEmpty() && state.getDiscardPile().size() <= 1) {
+            msg("⚠ Sin cartas disponibles para robar — mazo y descarte agotados.");
+            return null;
+        }
+        boolean willRecycle = state.getDeck().isEmpty();
+        Card card = state.drawFromDeck();
+        if (willRecycle) {
+            msg("♻ Mazo agotado — el descarte se ha reciclado y barajado de nuevo.");
+        }
+        return card;
     }
 
     // ─── Main game loop ───────────────────────────────────────────────────────
@@ -125,7 +142,7 @@ public class GUIGameController {
                 return;
             }
 
-            // UNO auto-announce for computer players only (humans get the interactive challenge)
+            // Bots auto-announce UNO; humans get the interactive challenge in doHumanTurn
             if (current.getHand().size() == 1 && current.isComputer()) {
                 SoundEffect.uno(music);
                 msg("⚠ ¡UNO! — a " + current.getName() + " le queda 1 carta.");
@@ -165,7 +182,8 @@ public class GUIGameController {
             return best;
         }
 
-        Card drawn = state.drawFromDeck();
+        Card drawn = safeDraw(state);
+        if (drawn == null) return null;
         computer.getHand().addCard(drawn);
         SoundEffect.drawCard();
         msg(computer.getName() + " robó una carta.");
@@ -189,7 +207,11 @@ public class GUIGameController {
         frame.disableAllInput();
 
         if (choice == -1) {
-            Card drawn = state.drawFromDeck();
+            Card drawn = safeDraw(state);
+            if (drawn == null) {
+                msg(human.getName() + " no puede robar — mazo y descarte agotados.");
+                return null;
+            }
             human.getHand().addCard(drawn);
             SoundEffect.drawCard();
             msg(human.getName() + " robó una carta.");
@@ -226,14 +248,16 @@ public class GUIGameController {
         return played;
     }
 
-    /** Shows the UNO challenge; applies 2-card penalty if the player doesn't press in time. */
+    /** Shows UNO challenge; applies 2-card penalty if the player doesn't press in time. */
     private void checkUnoAfterPlay(GameState state, Player human) {
         if (human.getHand().size() != 1) return;
 
         boolean saidUno = frame.runUnoChallenge();
         if (!saidUno) {
-            human.getHand().addCard(state.drawFromDeck());
-            human.getHand().addCard(state.drawFromDeck());
+            Card p1 = safeDraw(state);
+            Card p2 = safeDraw(state);
+            if (p1 != null) human.getHand().addCard(p1);
+            if (p2 != null) human.getHand().addCard(p2);
             msg("⚠ ¡No dijiste UNO! " + human.getName() + " roba 2 cartas de penalización.");
         } else {
             SoundEffect.uno(music);
@@ -289,8 +313,10 @@ public class GUIGameController {
                 SoundEffect.drawTwo();
                 state.nextPlayer();
                 Player victim = state.getCurrentPlayer();
-                victim.getHand().addCard(state.drawFromDeck());
-                victim.getHand().addCard(state.drawFromDeck());
+                Card c1 = safeDraw(state);
+                Card c2 = safeDraw(state);
+                if (c1 != null) victim.getHand().addCard(c1);
+                if (c2 != null) victim.getHand().addCard(c2);
                 msg(victim.getName() + " roba 2 cartas y pierde el turno.");
                 state.nextPlayer();
             }
@@ -298,7 +324,10 @@ public class GUIGameController {
                 SoundEffect.drawFour();
                 state.nextPlayer();
                 Player victim = state.getCurrentPlayer();
-                for (int i = 0; i < 4; i++) victim.getHand().addCard(state.drawFromDeck());
+                for (int i = 0; i < 4; i++) {
+                    Card c = safeDraw(state);
+                    if (c != null) victim.getHand().addCard(c);
+                }
                 msg(victim.getName() + " roba 4 cartas y pierde el turno.");
                 state.nextPlayer();
             }

@@ -10,6 +10,7 @@ import java.awt.event.*;
 import java.awt.geom.*;
 import java.util.*;
 import java.util.List;
+import java.awt.image.BufferedImage;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.function.BooleanSupplier;
@@ -496,7 +497,7 @@ public class UnoGameFrame extends JFrame {
                         @Override public void mouseClicked(MouseEvent e) {
                             if (cardCallback != null && cv.isPlayable()) {
                                 disableAllInput();
-                                cardCallback.accept(idx);
+                                animateCardToDiscard(cv, () -> cardCallback.accept(idx));
                             }
                         }
                     });
@@ -662,5 +663,79 @@ public class UnoGameFrame extends JFrame {
             if (c instanceof JPanel p && "cardsRow".equals(p.getName())) return p;
         }
         return (JPanel) handPanel.getComponent(1);
+    }
+
+    /**
+     * Animates a card sliding from its current position to the discard pile.
+     * Runs entirely on the EDT; calls onComplete when finished.
+     */
+    private void animateCardToDiscard(CardView source, Runnable onComplete) {
+        // Guard: if the component hasn't been laid out yet, skip animation
+        if (source.getWidth() <= 0 || source.getHeight() <= 0
+                || discardView.getWidth() <= 0) {
+            onComplete.run();
+            return;
+        }
+
+        // Snapshot of the card to draw during flight
+        BufferedImage snap = new BufferedImage(
+            source.getWidth(), source.getHeight(), BufferedImage.TYPE_INT_ARGB);
+        Graphics2D sg = snap.createGraphics();
+        source.paint(sg);
+        sg.dispose();
+
+        // Positions in root-pane coordinates
+        Point srcPt = SwingUtilities.convertPoint(source,      0, 0, getRootPane());
+        Point dstPt = SwingUtilities.convertPoint(discardView, 0, 0, getRootPane());
+
+        final int srcX = srcPt.x, srcY = srcPt.y;
+        final int dstX = dstPt.x, dstY = dstPt.y;
+        final int cardW = source.getWidth(), cardH = source.getHeight();
+        final int STEPS = 14;
+        final int[] step = {0};
+        final int[] cx = {srcX}, cy = {srcY}, cw = {cardW}, ch = {cardH};
+
+        // Save and replace glass pane for the duration of the animation
+        Component prevGlass = getGlassPane();
+        JComponent glass = new JComponent() {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION,
+                    RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+                    RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.drawImage(snap, cx[0], cy[0], cw[0], ch[0], null);
+                g2.dispose();
+            }
+        };
+        glass.setOpaque(false);
+        setGlassPane(glass);
+        glass.setVisible(true);
+
+        Timer anim = new Timer(16, null);   // ~60 fps
+        anim.addActionListener(e -> {
+            step[0]++;
+            // Ease-in-out curve
+            float t = (float) step[0] / STEPS;
+            float eased = t < 0.5f
+                ? 2 * t * t
+                : 1f - (float) Math.pow(-2 * t + 2, 2) / 2f;
+
+            cx[0] = (int)(srcX + (dstX - srcX) * eased);
+            cy[0] = (int)(srcY + (dstY - srcY) * eased);
+            float scale = 1.0f - 0.14f * eased;
+            cw[0] = (int)(cardW * scale);
+            ch[0] = (int)(cardH * scale);
+            glass.repaint();
+
+            if (step[0] >= STEPS) {
+                anim.stop();
+                glass.setVisible(false);
+                setGlassPane(prevGlass);
+                if (prevGlass != null) prevGlass.setVisible(false);
+                onComplete.run();
+            }
+        });
+        anim.start();
     }
 }
