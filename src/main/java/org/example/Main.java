@@ -40,6 +40,7 @@ public class Main {
                 return;
             }
 
+            frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
             frame.setVisible(true);
 
             // Start game logic in background thread
