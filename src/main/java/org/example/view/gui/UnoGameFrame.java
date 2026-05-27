@@ -314,8 +314,8 @@ public class UnoGameFrame extends JFrame {
     }
 
     private JButton buildMusicButton() {
-        JButton btn = new JButton("🔊");
-        btn.setFont(new Font("SansSerif", Font.PLAIN, 15));
+        JButton btn = new JButton("♫");
+        btn.setFont(new Font("SansSerif", Font.BOLD, 17));
         btn.setForeground(TEXT);
         btn.setOpaque(false);
         btn.setBackground(new Color(8, 30, 12));
@@ -324,7 +324,7 @@ public class UnoGameFrame extends JFrame {
         btn.setFocusPainted(false);
         btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btn.setPreferredSize(new Dimension(36, 28));
-        btn.setToolTipText("Silenciar / activar música");
+        btn.setToolTipText("Silenciar música");
         return btn;
     }
 
@@ -337,7 +337,10 @@ public class UnoGameFrame extends JFrame {
     public void setMusicControl(Runnable toggle, BooleanSupplier isMuted) {
         musicBtn.addActionListener(e -> {
             toggle.run();
-            musicBtn.setText(isMuted.getAsBoolean() ? "🔇" : "🔊");
+            boolean muted = isMuted.getAsBoolean();
+            // Symbol always ♫; color indicates state — white=on, gray=off
+            musicBtn.setForeground(muted ? new Color(100, 100, 100) : TEXT);
+            musicBtn.setToolTipText(muted ? "Activar música" : "Silenciar música");
         });
     }
 
