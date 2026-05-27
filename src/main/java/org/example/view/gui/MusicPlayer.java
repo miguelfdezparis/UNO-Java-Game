@@ -10,6 +10,8 @@ public class MusicPlayer {
     private static final int SKIP_BYTES = 10 * 16_000;
 
     private volatile float        volumeScale = 1.0f;
+    private volatile boolean      muted       = false;
+    private volatile boolean      ducked      = false;
     private volatile boolean      running     = false;
     private volatile SourceDataLine line       = null;
     private Thread playThread;
@@ -64,8 +66,15 @@ public class MusicPlayer {
         playThread.start();
     }
 
-    public void duck()   { volumeScale = 0.12f; }
-    public void unduck() { volumeScale = 1.0f; }
+    public void duck()   { ducked = true;  if (!muted) volumeScale = 0.12f; }
+    public void unduck() { ducked = false; volumeScale = muted ? 0.0f : 1.0f; }
+
+    public void toggle() {
+        muted = !muted;
+        volumeScale = muted ? 0.0f : (ducked ? 0.12f : 1.0f);
+    }
+
+    public boolean isMuted() { return muted; }
 
     public void stop() {
         running = false;

@@ -9,8 +9,7 @@ import java.util.*;
 import java.util.List;
 
 /**
- * Initial setup screen.
- * Collects: DB choice, number of players and their names/type.
+ * Initial setup screen with two tabs: "Jugar" (config) and "Reglas".
  * Returns a SetupConfig with all configuration, or null if cancelled.
  */
 public class SetupDialog extends JDialog {
@@ -32,10 +31,10 @@ public class SetupDialog extends JDialog {
 
     private SetupConfig result;
 
-    private final ButtonGroup dbGroup = new ButtonGroup();
-    private final JSpinner    countSpinner;
-    private final JPanel      playersPanel;
-    private final List<JTextField> nameFields   = new ArrayList<>();
+    private final ButtonGroup dbGroup     = new ButtonGroup();
+    private final JSpinner    countSpinner = new JSpinner(new SpinnerNumberModel(2, 2, 4, 1));
+    private final JPanel      playersPanel = new JPanel();
+    private final List<JTextField> nameFields    = new ArrayList<>();
     private final List<JCheckBox>  computerBoxes = new ArrayList<>();
 
     private static final java.awt.Color BG    = new java.awt.Color(15, 20, 40);
@@ -52,42 +51,113 @@ public class SetupDialog extends JDialog {
         setLayout(new BorderLayout());
         setResizable(true);
 
-        add(buildHeader(),  BorderLayout.NORTH);
+        add(buildHeader(), BorderLayout.NORTH);
 
-        JPanel body = new JPanel();
-        body.setLayout(new BoxLayout(body, BoxLayout.Y_AXIS));
-        body.setBackground(BG);
-        body.setBorder(BorderFactory.createEmptyBorder(8, 30, 8, 30));
-
-        body.add(buildDbSection());
-        body.add(Box.createVerticalStrut(14));
-
-        // Player count row
-        JPanel countRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-        countRow.setBackground(BG);
-        countRow.add(label("Jugadores: "));
-        countSpinner = new JSpinner(new SpinnerNumberModel(2, 2, 4, 1));
-        styleSpinner(countSpinner);
-        countRow.add(countSpinner);
-        body.add(countRow);
-        body.add(Box.createVerticalStrut(10));
-
-        playersPanel = new JPanel();
-        playersPanel.setLayout(new BoxLayout(playersPanel, BoxLayout.Y_AXIS));
-        playersPanel.setBackground(BG);
-        body.add(playersPanel);
-
-        add(body,          BorderLayout.CENTER);
-        add(buildFooter(), BorderLayout.SOUTH);
+        JTabbedPane tabs = new JTabbedPane();
+        tabs.setBackground(BG);
+        tabs.setForeground(FG);
+        tabs.setFont(new Font("SansSerif", Font.BOLD, 13));
+        tabs.addTab("  Jugar  ", buildPlayTab());
+        tabs.addTab("  Reglas  ", buildRulesTab());
+        add(tabs, BorderLayout.CENTER);
 
         countSpinner.addChangeListener(e -> rebuildPlayers((int) countSpinner.getValue()));
         rebuildPlayers(2);
 
         pack();
-        setMinimumSize(new Dimension(520, 540));
-        setSize(Math.max(520, getWidth()), Math.max(540, getHeight()));
+        setMinimumSize(new Dimension(520, 580));
+        setSize(Math.max(520, getWidth()), Math.max(580, getHeight()));
         setLocationRelativeTo(parent);
     }
+
+    // ─── Tab builders ─────────────────────────────────────────────────────────
+
+    private JPanel buildPlayTab() {
+        JPanel tab = new JPanel(new BorderLayout());
+        tab.setBackground(BG);
+
+        JPanel body = new JPanel();
+        body.setLayout(new BoxLayout(body, BoxLayout.Y_AXIS));
+        body.setBackground(BG);
+        body.setBorder(BorderFactory.createEmptyBorder(12, 30, 8, 30));
+
+        body.add(buildDbSection());
+        body.add(Box.createVerticalStrut(14));
+
+        JPanel countRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        countRow.setBackground(BG);
+        countRow.add(label("Jugadores: "));
+        styleSpinner(countSpinner);
+        countRow.add(countSpinner);
+        body.add(countRow);
+        body.add(Box.createVerticalStrut(10));
+
+        playersPanel.setLayout(new BoxLayout(playersPanel, BoxLayout.Y_AXIS));
+        playersPanel.setBackground(BG);
+        body.add(playersPanel);
+
+        tab.add(body, BorderLayout.CENTER);
+        tab.add(buildFooter(), BorderLayout.SOUTH);
+        return tab;
+    }
+
+    private JPanel buildRulesTab() {
+        JPanel tab = new JPanel(new BorderLayout());
+        tab.setBackground(BG);
+
+        JTextArea text = new JTextArea(RULES_TEXT);
+        text.setEditable(false);
+        text.setBackground(new java.awt.Color(18, 25, 50));
+        text.setForeground(new java.awt.Color(200, 210, 240));
+        text.setFont(new Font("Monospaced", Font.PLAIN, 13));
+        text.setLineWrap(true);
+        text.setWrapStyleWord(true);
+        text.setBorder(BorderFactory.createEmptyBorder(16, 20, 16, 20));
+        text.setCaretPosition(0);
+
+        JScrollPane scroll = new JScrollPane(text);
+        scroll.setBorder(BorderFactory.createEmptyBorder());
+        scroll.getViewport().setBackground(new java.awt.Color(18, 25, 50));
+        tab.add(scroll, BorderLayout.CENTER);
+        return tab;
+    }
+
+    private static final String RULES_TEXT =
+        "R E G L A S   D E L   U N O\n" +
+        "════════════════════════════════════\n\n" +
+        "OBJETIVO\n" +
+        "  Ser el primero en quedarse sin cartas.\n\n" +
+        "PREPARACIÓN\n" +
+        "  • Cada jugador recibe 7 cartas al inicio.\n" +
+        "  • La primera carta del mazo se voltea para\n" +
+        "    iniciar la pila de descarte.\n\n" +
+        "CÓMO JUGAR\n" +
+        "  En tu turno debes hacer una de estas cosas:\n" +
+        "  1. Jugar una carta que coincida en COLOR\n" +
+        "     o NÚMERO/SÍMBOLO con la del descarte.\n" +
+        "  2. Jugar un comodín (siempre válido).\n" +
+        "  3. Si no puedes jugar, robar una carta del\n" +
+        "     mazo. Si es jugable, puedes usarla ya.\n\n" +
+        "CARTAS ESPECIALES\n" +
+        "  🚫 Salta        El siguiente jugador pierde\n" +
+        "                  su turno.\n" +
+        "  🔄 Reverso      Invierte el sentido del juego.\n" +
+        "  +2 Roba Dos     El siguiente jugador roba 2\n" +
+        "                  cartas y pierde su turno.\n" +
+        "  🌈 Comodín      Elige el color activo.\n" +
+        "  🌈 Comodín +4   Elige el color Y el siguiente\n" +
+        "                  jugador roba 4 cartas y pierde\n" +
+        "                  su turno.\n\n" +
+        "DECIR UNO  ⚠\n" +
+        "  Cuando te quede solo 1 carta, pulsa el\n" +
+        "  botón  ¡UNO!  que aparece en pantalla\n" +
+        "  antes de que expire la cuenta atrás\n" +
+        "  (3 segundos).\n" +
+        "  Si no lo haces → ¡recibes 2 cartas de\n" +
+        "  penalización!\n\n" +
+        "GANAR\n" +
+        "  El primero en vaciar su mano gana.\n" +
+        "  Los resultados se guardan en el marcador.\n";
 
     // ─── Section builders ─────────────────────────────────────────────────────
 
@@ -114,8 +184,8 @@ public class SetupDialog extends JDialog {
     private JPanel buildDbSection() {
         JPanel p = section("Base de datos");
 
-        JRadioButton rb1 = radio("PostgreSQL", "pg",  true);
-        JRadioButton rb2 = radio("MongoDB",    "mg",  false);
+        JRadioButton rb1 = radio("PostgreSQL",     "pg",   true);
+        JRadioButton rb2 = radio("MongoDB",        "mg",   false);
         JRadioButton rb3 = radio("Sin BD (local)", "none", false);
 
         JPanel row = new JPanel();
@@ -159,13 +229,12 @@ public class SetupDialog extends JDialog {
         playersPanel.revalidate();
         playersPanel.repaint();
         pack();
-        if (getHeight() < 540) setSize(getWidth(), 540);
+        if (getHeight() < 580) setSize(getWidth(), 580);
     }
 
     private JPanel buildFooter() {
         JPanel p = new JPanel(new FlowLayout(FlowLayout.CENTER, 14, 14));
         p.setBackground(BG);
-
         JButton start = accentButton("  JUGAR  ");
         start.addActionListener(e -> collect());
         p.add(start);
@@ -182,8 +251,7 @@ public class SetupDialog extends JDialog {
             if (name.isEmpty()) name = "Jugador" + (i + 1);
             players.add(new PlayerConfig(name, computerBoxes.get(i).isSelected()));
         }
-        int db = selectedDb();
-        result = new SetupConfig(db, players);
+        result = new SetupConfig(selectedDb(), players);
         dispose();
     }
 
@@ -193,9 +261,9 @@ public class SetupDialog extends JDialog {
             AbstractButton b = btns.nextElement();
             if (b.isSelected()) {
                 return switch (b.getActionCommand()) {
-                    case "pg"   -> 1;
-                    case "mg"   -> 2;
-                    default     -> 0;
+                    case "pg"  -> 1;
+                    case "mg"  -> 2;
+                    default    -> 0;
                 };
             }
         }
@@ -208,7 +276,6 @@ public class SetupDialog extends JDialog {
         p.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new java.awt.Color(50, 60, 100), 1),
             BorderFactory.createEmptyBorder(10, 14, 10, 14)));
-
         JLabel lbl = new JLabel(title);
         lbl.setFont(new Font("SansSerif", Font.BOLD, 13));
         lbl.setForeground(new java.awt.Color(150, 170, 255));
@@ -285,7 +352,6 @@ public class SetupDialog extends JDialog {
         return btn;
     }
 
-    /** Opens the dialog; returns the config, or null if closed without confirming. */
     public static SetupConfig show(JFrame parent) {
         SetupDialog dlg = new SetupDialog(parent);
         dlg.setVisible(true);

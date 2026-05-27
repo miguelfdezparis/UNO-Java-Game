@@ -17,26 +17,26 @@ public class GUIGameController {
 
     private final UnoGameFrame frame;
     private final List<Player> players;
-    private final List<Card>   deckCards;  // null means use built-in deck
+    private final List<Card>   deckCards;
     private final HashMap<String, Integer> allTimeScores;
     private final FileManager fileManager = new FileManager();
 
-    // Human player (the first non-computer player found, for single-human games)
-    // For multi-human we treat each human's turn separately
     private final BlockingQueue<Integer> inputQueue = new LinkedBlockingQueue<>();
+    private final MusicPlayer music = new MusicPlayer();
 
     public GUIGameController(UnoGameFrame frame,
                              SetupDialog.SetupConfig config) {
         this.frame = frame;
         this.allTimeScores = fileManager.loadScores();
 
-        // Build player list
+        frame.setMusicControl(music::toggle, music::isMuted);
+        frame.updateScoreboard(allTimeScores);
+
         this.players = new ArrayList<>();
         for (SetupDialog.PlayerConfig pc : config.players) {
             players.add(new Player(pc.name(), pc.isComputer()));
         }
 
-        // Load cards from DB or use in-memory
         List<Card> cards = null;
         if (config.dbChoice != 0) {
             try {
@@ -59,13 +59,9 @@ public class GUIGameController {
         }
         this.deckCards = cards;
 
-        // Register input callback
         frame.setCardCallback(idx -> inputQueue.add(idx));
     }
 
-    private final MusicPlayer music = new MusicPlayer();
-
-    /** Starts the game loop in a background thread. */
     public void start() {
         music.play();
         Thread gameThread = new Thread(this::gameLoop, "uno-game-loop");
@@ -82,8 +78,6 @@ public class GUIGameController {
             : new GameState(playerList);
         state.dealInitialCards();
 
-        // Find a "representative" human player for frame updates
-        // (the current human player changes each turn)
         Player anyHuman = players.stream()
             .filter(p -> !p.isComputer())
             .findFirst()
@@ -106,7 +100,6 @@ public class GUIGameController {
                 played = doHumanTurn(state, current);
             }
 
-            // Check winner
             if (current.getHand().isEmpty()) {
                 updateFrame(state, current);
                 msg("🏆 ¡" + current.getName() + " gana la partida!");
@@ -114,6 +107,7 @@ public class GUIGameController {
 
                 allTimeScores.merge(current.getName(), 1, Integer::sum);
                 fileManager.saveScores(allTimeScores);
+                frame.updateScoreboard(allTimeScores);
 
                 SoundEffect.win(music, current.getName());
                 sleep(3000);
@@ -131,7 +125,8 @@ public class GUIGameController {
                 return;
             }
 
-            if (current.getHand().size() == 1) {
+            // UNO auto-announce for computer players only (humans get the interactive challenge)
+            if (current.getHand().size() == 1 && current.isComputer()) {
                 SoundEffect.uno(music);
                 msg("⚠ ¡UNO! — a " + current.getName() + " le queda 1 carta.");
             }
@@ -188,15 +183,12 @@ public class GUIGameController {
     // ─── Human turn ───────────────────────────────────────────────────────────
 
     private Card doHumanTurn(GameState state, Player human) {
-        // Show hand and enable clicks
         frame.showPlayerHand(human, state.getTopCard(), state.getCurrentColor(), true);
 
         int choice = waitForInput();
-
         frame.disableAllInput();
 
         if (choice == -1) {
-            // Draw a card
             Card drawn = state.drawFromDeck();
             human.getHand().addCard(drawn);
             SoundEffect.drawCard();
@@ -216,22 +208,37 @@ public class GUIGameController {
                     state.playCard(drawn);
                     msg(human.getName() + " jugó " + cardName(drawn));
                     handleWild(drawn, state, human);
+                    checkUnoAfterPlay(state, human);
                     return drawn;
                 }
             }
             return null;
         }
 
-        // Play a card
         Card played = human.getHand().playCard(choice);
         state.playCard(played);
         SoundEffect.playCard();
         msg(human.getName() + " jugó " + cardName(played));
         handleWild(played, state, human);
+        checkUnoAfterPlay(state, human);
 
-        // Refresh hand after playing
         frame.showPlayerHand(human, state.getTopCard(), state.getCurrentColor(), false);
         return played;
+    }
+
+    /** Shows the UNO challenge; applies 2-card penalty if the player doesn't press in time. */
+    private void checkUnoAfterPlay(GameState state, Player human) {
+        if (human.getHand().size() != 1) return;
+
+        boolean saidUno = frame.runUnoChallenge();
+        if (!saidUno) {
+            human.getHand().addCard(state.drawFromDeck());
+            human.getHand().addCard(state.drawFromDeck());
+            msg("⚠ ¡No dijiste UNO! " + human.getName() + " roba 2 cartas de penalización.");
+        } else {
+            SoundEffect.uno(music);
+            msg("✅ ¡UNO! — a " + human.getName() + " le queda 1 carta.");
+        }
     }
 
     // ─── Wild card color choice ───────────────────────────────────────────────
@@ -338,9 +345,7 @@ public class GUIGameController {
         };
     }
 
-    private void msg(String text) {
-        frame.appendMessage(text);
-    }
+    private void msg(String text) { frame.appendMessage(text); }
 
     private void sleep(int ms) {
         try { Thread.sleep(ms); } catch (InterruptedException ignored) {}

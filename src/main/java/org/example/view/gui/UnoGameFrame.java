@@ -10,21 +10,24 @@ import java.awt.event.*;
 import java.awt.geom.*;
 import java.util.*;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
 /**
  * Main game window.
  *
  * Layout (green felt table):
- *   NORTH  – info bar (turn / direction / deck / active color)
+ *   NORTH  – info bar (turn / direction / deck / active color / music toggle)
  *   CENTER – split panel: opponents (top) + game table (center)
- *   SOUTH  – current player hand + draw button
- *   EAST   – message log
+ *   SOUTH  – current player hand + draw button + UNO challenge button
+ *   EAST   – message log + all-time scoreboard
  */
 public class UnoGameFrame extends JFrame {
 
     // ─── UI colors ────────────────────────────────────────────────────────────
-    private static final Color TABLE  = new Color(22, 88, 38);    // dark green felt
+    private static final Color TABLE  = new Color(22, 88, 38);
     private static final Color TABLE2 = new Color(16, 68, 28);
     private static final Color BG     = new Color(12, 46, 18);
     private static final Color TEXT   = Color.WHITE;
@@ -32,11 +35,10 @@ public class UnoGameFrame extends JFrame {
     private static final Color ACCENT = new Color(210, 35, 35);
 
     // ─── Panels ───────────────────────────────────────────────────────────────
-    private final JPanel    infoBar       = new JPanel(new FlowLayout(FlowLayout.CENTER, 24, 10));
-    private final JPanel    opponentArea  = new JPanel();
+    private final JPanel    infoBar      = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
+    private final JPanel    opponentArea = new JPanel();
     private final JPanel    tableCenterPanel;
     private final JPanel    handPanel;
-    private final JTextArea messageLog;
     private       JLabel    handTitle;
 
     // Info bar labels
@@ -45,6 +47,9 @@ public class UnoGameFrame extends JFrame {
     private final JLabel lblDeck  = infoLabel("Mazo: —");
     private final JLabel lblColor = new JLabel();
 
+    // Music toggle button
+    private final JButton musicBtn = buildMusicButton();
+
     // Table elements
     private CardView discardView;
     private final CardView deckView = new CardView(null, true);
@@ -52,7 +57,19 @@ public class UnoGameFrame extends JFrame {
     // Draw button
     private JButton drawBtn;
 
-    // Input callback: receives Integer (card index or -1 for draw)
+    // UNO challenge
+    private JButton  unoBtn;
+    private volatile CountDownLatch unoChallengeResult;
+    private volatile boolean        unoPressedInTime;
+    private          Timer          unoCountdownTimer;
+
+    // Scoreboard
+    private final JPanel scoreContent = new JPanel();
+
+    // Message log
+    private final JTextArea messageLog;
+
+    // Input callback
     private Consumer<Integer> cardCallback;
 
     // ─── Constructor ──────────────────────────────────────────────────────────
@@ -60,8 +77,8 @@ public class UnoGameFrame extends JFrame {
     public UnoGameFrame() {
         super("UNO Java Game");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setMinimumSize(new Dimension(1000, 700));
-        setPreferredSize(new Dimension(1060, 720));
+        setMinimumSize(new Dimension(1020, 700));
+        setPreferredSize(new Dimension(1120, 740));
 
         JPanel root = new JPanel(new BorderLayout(0, 0));
         root.setBackground(BG);
@@ -78,8 +95,10 @@ public class UnoGameFrame extends JFrame {
         infoBar.add(separator());
         infoBar.add(lblDeck);
         infoBar.add(separator());
-        infoBar.add(new JLabel("Color activo:"));
+        infoBar.add(new JLabel("Color:"));
         infoBar.add(lblColor);
+        infoBar.add(separator());
+        infoBar.add(musicBtn);
         styleInfoLabels();
         root.add(infoBar, BorderLayout.NORTH);
 
@@ -101,7 +120,7 @@ public class UnoGameFrame extends JFrame {
         handPanel = buildHandPanel();
         root.add(handPanel, BorderLayout.SOUTH);
 
-        // ── message log ──
+        // ── east: log + scoreboard ──
         messageLog = new JTextArea(8, 22);
         messageLog.setEditable(false);
         messageLog.setBackground(new Color(8, 28, 12));
@@ -111,9 +130,9 @@ public class UnoGameFrame extends JFrame {
         messageLog.setLineWrap(true);
         messageLog.setBorder(BorderFactory.createEmptyBorder(6, 8, 6, 8));
         JScrollPane logScroll = new JScrollPane(messageLog);
-        logScroll.setPreferredSize(new Dimension(200, 200));
-        logScroll.setBorder(BorderFactory.createMatteBorder(0, 1, 0, 0, new Color(40, 90, 50)));
+        logScroll.setBorder(null);
         logScroll.getViewport().setBackground(new Color(8, 28, 12));
+
         JPanel logWrapper = new JPanel(new BorderLayout());
         logWrapper.setBackground(new Color(8, 28, 12));
         JLabel logTitle = new JLabel("  Historial", SwingConstants.LEFT);
@@ -122,7 +141,30 @@ public class UnoGameFrame extends JFrame {
         logTitle.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(40, 90, 50)));
         logWrapper.add(logTitle, BorderLayout.NORTH);
         logWrapper.add(logScroll, BorderLayout.CENTER);
-        root.add(logWrapper, BorderLayout.EAST);
+
+        scoreContent.setLayout(new BoxLayout(scoreContent, BoxLayout.Y_AXIS));
+        scoreContent.setBackground(new Color(8, 28, 12));
+        scoreContent.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
+        JScrollPane scoreScroll = new JScrollPane(scoreContent);
+        scoreScroll.setBorder(null);
+        scoreScroll.getViewport().setBackground(new Color(8, 28, 12));
+
+        JPanel scoreWrapper = new JPanel(new BorderLayout());
+        scoreWrapper.setBackground(new Color(8, 28, 12));
+        scoreWrapper.setPreferredSize(new Dimension(200, 170));
+        scoreWrapper.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(40, 90, 50)));
+        JLabel scoreTitle = new JLabel("  Marcadores", SwingConstants.LEFT);
+        scoreTitle.setFont(new Font("SansSerif", Font.BOLD, 12));
+        scoreTitle.setForeground(new Color(100, 180, 100));
+        scoreTitle.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(40, 90, 50)));
+        scoreWrapper.add(scoreTitle, BorderLayout.NORTH);
+        scoreWrapper.add(scoreScroll, BorderLayout.CENTER);
+
+        JPanel eastContainer = new JPanel(new BorderLayout());
+        eastContainer.setBorder(BorderFactory.createMatteBorder(0, 1, 0, 0, new Color(40, 90, 50)));
+        eastContainer.add(logWrapper, BorderLayout.CENTER);
+        eastContainer.add(scoreWrapper, BorderLayout.SOUTH);
+        root.add(eastContainer, BorderLayout.EAST);
 
         pack();
         setLocationRelativeTo(null);
@@ -137,7 +179,6 @@ public class UnoGameFrame extends JFrame {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2.setPaint(new GradientPaint(0, 0, TABLE, getWidth(), getHeight(), TABLE2));
                 g2.fillRoundRect(12, 6, getWidth() - 24, getHeight() - 12, 40, 40);
-                // Felt border ring
                 g2.setColor(new Color(35, 115, 55, 180));
                 g2.setStroke(new BasicStroke(3f));
                 g2.drawRoundRect(12, 6, getWidth() - 24, getHeight() - 12, 40, 40);
@@ -151,12 +192,10 @@ public class UnoGameFrame extends JFrame {
         GridBagConstraints gc = new GridBagConstraints();
         gc.insets = new Insets(0, 30, 0, 30);
 
-        // Deck pile
         JPanel deckPanel = pilePanel("MAZO", deckView);
         gc.gridx = 0; gc.gridy = 0;
         p.add(deckPanel, gc);
 
-        // Discard pile placeholder
         discardView = new CardView(null, true);
         JPanel discardPanel = pilePanel("DESCARTE", discardView);
         gc.gridx = 1; gc.gridy = 0;
@@ -172,10 +211,19 @@ public class UnoGameFrame extends JFrame {
             BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(40, 90, 50)),
             BorderFactory.createEmptyBorder(8, 12, 10, 12)));
 
+        // Title row: hand label (left) + UNO challenge button (right)
+        JPanel titleRow = new JPanel(new BorderLayout());
+        titleRow.setBackground(BG);
+
         handTitle = new JLabel("Tu mano", SwingConstants.LEFT);
         handTitle.setFont(new Font("SansSerif", Font.BOLD, 13));
         handTitle.setForeground(new Color(120, 200, 120));
-        wrapper.add(handTitle, BorderLayout.NORTH);
+        titleRow.add(handTitle, BorderLayout.WEST);
+
+        unoBtn = buildUnoButton();
+        titleRow.add(unoBtn, BorderLayout.EAST);
+
+        wrapper.add(titleRow, BorderLayout.NORTH);
 
         JPanel cardsRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 6, 2));
         cardsRow.setName("cardsRow");
@@ -228,22 +276,139 @@ public class UnoGameFrame extends JFrame {
         return btn;
     }
 
-    // ─── State updates (called from game thread via invokeLater) ──────────────
+    private JButton buildUnoButton() {
+        JButton btn = new JButton("¡UNO! (3)") {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(new Color(210, 20, 20));
+                g2.fill(new RoundRectangle2D.Float(0, 0, getWidth(), getHeight(), 12, 12));
+                g2.setColor(new Color(255, 200, 0));
+                g2.setStroke(new BasicStroke(2f));
+                g2.draw(new RoundRectangle2D.Float(2, 2, getWidth() - 4, getHeight() - 4, 10, 10));
+                g2.setFont(getFont());
+                g2.setColor(Color.WHITE);
+                FontMetrics fm = g2.getFontMetrics();
+                g2.drawString(getText(),
+                    (getWidth() - fm.stringWidth(getText())) / 2.0f,
+                    (getHeight() + fm.getAscent() - fm.getDescent()) / 2.0f);
+                g2.dispose();
+            }
+        };
+        btn.setFont(new Font("SansSerif", Font.BOLD, 15));
+        btn.setPreferredSize(new Dimension(130, 30));
+        btn.setContentAreaFilled(false);
+        btn.setBorderPainted(false);
+        btn.setFocusPainted(false);
+        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btn.setVisible(false);
+        btn.addActionListener(e -> {
+            if (unoCountdownTimer != null) unoCountdownTimer.stop();
+            unoPressedInTime = true;
+            btn.setVisible(false);
+            if (unoChallengeResult != null) unoChallengeResult.countDown();
+        });
+        return btn;
+    }
+
+    private JButton buildMusicButton() {
+        JButton btn = new JButton("🔊");
+        btn.setFont(new Font("SansSerif", Font.PLAIN, 15));
+        btn.setForeground(TEXT);
+        btn.setOpaque(false);
+        btn.setBackground(new Color(8, 30, 12));
+        btn.setBorderPainted(false);
+        btn.setContentAreaFilled(false);
+        btn.setFocusPainted(false);
+        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btn.setPreferredSize(new Dimension(36, 28));
+        btn.setToolTipText("Silenciar / activar música");
+        return btn;
+    }
+
+    // ─── State updates ────────────────────────────────────────────────────────
 
     public void setCardCallback(Consumer<Integer> cb) {
         this.cardCallback = cb;
     }
 
+    public void setMusicControl(Runnable toggle, BooleanSupplier isMuted) {
+        musicBtn.addActionListener(e -> {
+            toggle.run();
+            musicBtn.setText(isMuted.getAsBoolean() ? "🔇" : "🔊");
+        });
+    }
+
+    public void updateScoreboard(Map<String, Integer> scores) {
+        SwingUtilities.invokeLater(() -> {
+            scoreContent.removeAll();
+            scores.entrySet().stream()
+                .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
+                .forEach(entry -> {
+                    String wins = entry.getValue() == 1 ? "1 victoria" : entry.getValue() + " victorias";
+                    JLabel lbl = new JLabel(entry.getKey() + ":  " + wins);
+                    lbl.setFont(new Font("SansSerif", Font.PLAIN, 11));
+                    lbl.setForeground(new Color(160, 210, 160));
+                    lbl.setBorder(BorderFactory.createEmptyBorder(2, 0, 2, 0));
+                    scoreContent.add(lbl);
+                });
+            if (scores.isEmpty()) {
+                JLabel none = new JLabel("Sin partidas registradas");
+                none.setFont(new Font("SansSerif", Font.ITALIC, 11));
+                none.setForeground(new Color(100, 140, 100));
+                scoreContent.add(none);
+            }
+            scoreContent.revalidate();
+            scoreContent.repaint();
+        });
+    }
+
+    /**
+     * Shows the UNO challenge button with a 3-second countdown.
+     * Blocks the calling (game) thread until the player presses it or time runs out.
+     * Returns true if pressed in time, false if timed out (penalty applies).
+     */
+    public boolean runUnoChallenge() {
+        unoChallengeResult  = new CountDownLatch(1);
+        unoPressedInTime    = false;
+
+        SwingUtilities.invokeLater(() -> {
+            int[] remaining = {3};
+            unoBtn.setText("¡UNO! (" + remaining[0] + ")");
+            unoBtn.setVisible(true);
+
+            unoCountdownTimer = new Timer(1000, null);
+            unoCountdownTimer.addActionListener(e -> {
+                remaining[0]--;
+                if (remaining[0] <= 0) {
+                    unoCountdownTimer.stop();
+                    unoBtn.setVisible(false);
+                    if (unoChallengeResult != null) unoChallengeResult.countDown();
+                } else {
+                    unoBtn.setText("¡UNO! (" + remaining[0] + ")");
+                }
+            });
+            unoCountdownTimer.start();
+        });
+
+        try { unoChallengeResult.await(); } catch (InterruptedException ignored) {}
+
+        SwingUtilities.invokeLater(() -> {
+            if (unoCountdownTimer != null) unoCountdownTimer.stop();
+            unoBtn.setVisible(false);
+        });
+
+        return unoPressedInTime;
+    }
+
     /** Full refresh of the game state. */
     public void updateState(GameState state, List<Player> allPlayers, Player humanPlayer) {
         SwingUtilities.invokeLater(() -> {
-            // Info bar
             lblTurn.setText("Turno " + state.getTurnCount());
             lblDir.setText(state.isClockwise() ? "→" : "←");
             lblDeck.setText("Mazo: " + state.getDeck().size());
             updateColorDot(state.getCurrentColor());
 
-            // Discard pile
             Card top = state.getTopCard();
             JPanel discardPanel = (JPanel) discardView.getParent();
             discardView = new CardView(top, false);
@@ -253,7 +418,6 @@ public class UnoGameFrame extends JFrame {
             discardPanel.revalidate();
             discardPanel.repaint();
 
-            // Opponents
             updateOpponents(state, allPlayers, humanPlayer);
 
             revalidate();
@@ -267,8 +431,7 @@ public class UnoGameFrame extends JFrame {
 
         for (Player p : allPlayers) {
             if (p == humanPlayer) continue;
-            JPanel opPanel = buildOpponentPanel(p, p == current);
-            opponentArea.add(opPanel);
+            opponentArea.add(buildOpponentPanel(p, p == current));
         }
         opponentArea.revalidate();
         opponentArea.repaint();
@@ -293,21 +456,17 @@ public class UnoGameFrame extends JFrame {
         panel.setOpaque(false);
         panel.setBorder(BorderFactory.createEmptyBorder(6, 10, 6, 10));
 
-        // Name
         String tag = p.isComputer() ? " 🤖" : " 👤";
         JLabel nameLabel = new JLabel(p.getName() + tag + "  (" + p.getHand().size() + ")");
         nameLabel.setFont(new Font("SansSerif", Font.BOLD, 12));
         nameLabel.setForeground(isCurrentTurn ? new Color(120, 255, 130) : TEXT2);
         panel.add(nameLabel, BorderLayout.NORTH);
 
-        // Card backs
         int cardCount = p.getHand().size();
         int shown = Math.min(cardCount, 10);
         JPanel cardsRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 2, 0));
         cardsRow.setOpaque(false);
-        for (int i = 0; i < shown; i++) {
-            cardsRow.add(CardView.smallBack());
-        }
+        for (int i = 0; i < shown; i++) cardsRow.add(CardView.smallBack());
         if (cardCount > 10) {
             JLabel more = new JLabel("+" + (cardCount - 10));
             more.setFont(new Font("SansSerif", Font.BOLD, 10));
@@ -319,10 +478,6 @@ public class UnoGameFrame extends JFrame {
         return panel;
     }
 
-    /**
-     * Refresh the human player's hand and enable clicking.
-     * Highlights playable cards with green glow.
-     */
     public void showPlayerHand(Player player, Card topCard, org.example.model.Color currentColor, boolean enableInput) {
         SwingUtilities.invokeLater(() -> {
             JPanel cardsRow = getCardsRow();
@@ -349,7 +504,6 @@ public class UnoGameFrame extends JFrame {
                 cardsRow.add(cv);
             }
 
-            // Draw button lives in cardsRow; re-add it after every rebuild
             cardsRow.add(drawBtn);
             drawBtn.setEnabled(enableInput);
 
@@ -362,7 +516,6 @@ public class UnoGameFrame extends JFrame {
         });
     }
 
-    /** Shows a "waiting" message in the hand area during computer/other player turns. */
     public void showWaitingHand(Player player) {
         SwingUtilities.invokeLater(() -> {
             JPanel cardsRow = getCardsRow();
@@ -402,10 +555,6 @@ public class UnoGameFrame extends JFrame {
         });
     }
 
-    /**
-     * Shows a full-screen overlay announcing the winner.
-     * Blocks until the user chooses; returns true if they want to play again.
-     */
     public boolean showWinnerOverlay(Player winner) {
         boolean[] restart = {false};
         try {
@@ -491,9 +640,7 @@ public class UnoGameFrame extends JFrame {
 
     private void styleInfoLabels() {
         for (Component c : infoBar.getComponents()) {
-            if (c instanceof JLabel l && l.getText() != null) {
-                l.setForeground(TEXT);
-            }
+            if (c instanceof JLabel l && l.getText() != null) l.setForeground(TEXT);
         }
     }
 
