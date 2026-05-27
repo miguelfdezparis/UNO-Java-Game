@@ -44,13 +44,18 @@ public class SoundEffect {
         for (int i = 0; i < freqs.length; i++) tone(freqs[i], durs[i], 1.0f);
     }
 
-    // TTS via PowerShell (Windows)
+    private static final String TTS_INIT =
+        "Add-Type -AssemblyName System.Speech; " +
+        "$s = New-Object System.Speech.Synthesis.SpeechSynthesizer; " +
+        "$v = $s.GetInstalledVoices() | Where-Object { $_.VoiceInfo.Culture.Name -like 'es*' } | Select-Object -First 1; " +
+        "if ($v) { $s.SelectVoice($v.VoiceInfo.Name) }; ";
+
+    // TTS via PowerShell (Windows) — fuerza voz española si está instalada
     public static void speak(String text) {
         try {
-            String script = String.format(
-                "Add-Type -AssemblyName System.Speech; " +
-                "$s = New-Object System.Speech.Synthesis.SpeechSynthesizer; " +
-                "$s.Rate = 1; $s.Volume = 100; $s.Speak('%s');", text);
+            String safeText = text.replace("'", "");
+            String script = TTS_INIT +
+                String.format("$s.Rate = 1; $s.Volume = 100; $s.Speak('%s');", safeText);
             new ProcessBuilder("powershell", "-NoProfile", "-Command", script)
                 .redirectErrorStream(true)
                 .start()
@@ -61,9 +66,7 @@ public class SoundEffect {
     // "Queda una carta" normal + "UNOOO!" lento y potente
     private static void speakUno() {
         try {
-            String script =
-                "Add-Type -AssemblyName System.Speech; " +
-                "$s = New-Object System.Speech.Synthesis.SpeechSynthesizer; " +
+            String script = TTS_INIT +
                 "$s.Volume = 100; $s.Rate = 1; $s.Speak('Queda una carta...'); " +
                 "$s.Rate = -3; $s.Volume = 100; $s.Speak('UNOOO!');";
             new ProcessBuilder("powershell", "-NoProfile", "-Command", script)
