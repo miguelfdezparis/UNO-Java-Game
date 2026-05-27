@@ -47,14 +47,19 @@ MONGO_DB=unojavagame
 
 ## Features
 
-- **Graphical interface** built with Java Swing — dark theme, animated card hand
+- **Graphical interface** — Java Swing, dark green felt theme, card animations
 - **2–4 players**, any mix of human and CPU
 - **CPU AI** — prefers action cards, picks the best colour on wild cards
+- **Card play animation** — when you play a card it slides from your hand to the discard pile with an ease-in-out curve
 - **Background music** — plays automatically, loops, starts at second 10
+- **Music toggle button** — 🔊/🔇 button in the top bar silences/restores music at any time
 - **Sound effects** — different sounds for each card type (play, draw, skip, reverse, +2, +4, wild)
-- **Text-to-speech** — when someone reaches UNO: *"Queda una carta… UNOOO!"* (music ducks automatically); when someone wins: *"[name] ha ganado!"*
+- **Text-to-speech** — voices in Spanish; when UNO is called: *"Queda una carta… UNOOO!"* (music ducks automatically); on win: *"[name] ha ganado!"*; amplified 4× for clarity
+- **UNO penalty** — when you play down to 1 card a red `¡UNO! (3)` button appears with a 3-second countdown; miss it and you draw 2 penalty cards; CPU always calls UNO automatically
+- **Live scoreboard** — all-time wins from `scores.csv` shown in the sidebar during the game, updated in real time after each match
+- **Rules screen** — the setup dialog has a "Reglas" tab with the full UNO ruleset
+- **Deck recycling** — when the draw pile runs out the discard pile (minus the top card) is automatically shuffled and reused; logged in the game history
 - **Play again / Exit** — dialog at the end of each game
-- **Persistent scoreboard** — wins saved to `scores.csv` between sessions
 - **Database selector** — choose PostgreSQL, MongoDB, or no DB at the setup screen
 
 ---
@@ -83,18 +88,21 @@ src/main/java/org/example/
 │   └── gui/
 │       ├── GUIGameController.java ← GUI game loop (background thread)
 │       ├── UnoGameFrame.java      ← main game window
-│       ├── SetupDialog.java       ← setup screen (DB, players)
-│       ├── CardView.java          ← individual card rendering
+│       ├── SetupDialog.java       ← setup screen with Jugar / Reglas tabs
+│       ├── CardView.java          ← individual card rendering (Java2D)
 │       ├── ColorPickerDialog.java ← wild colour selector
-│       ├── MusicPlayer.java       ← MP3 background music with volume control
-│       └── SoundEffect.java       ← procedural sound effects + TTS
+│       ├── DrawnCardDialog.java   ← prompt to play a drawn card
+│       ├── MusicPlayer.java       ← MP3 background music, mute toggle
+│       └── SoundEffect.java       ← procedural sound effects + amplified TTS
 ├── db/
 │   ├── BarajaDAO.java             ← interface
 │   ├── DatabaseConnection.java    ← reads .env
 │   ├── PostgresBarajaDAO.java
 │   └── MongoBarajaDAO.java
 └── utils/
-    └── FileManager.java           ← loads and saves scores.csv
+    ├── FileManager.java           ← loads and saves scores.csv
+    ├── BarajaCatalog.java
+    └── CartaConverter.java
 src/main/resources/
 └── music.mp3                      ← background music
 sql/
@@ -107,16 +115,25 @@ iniciar-bases-datos.bat            ← one-click database setup (Windows)
 ## How the game works
 
 ```
-Main → SetupDialog (DB choice, players)
+Main → SetupDialog (DB choice, players, rules tab)
          ↓
        GUIGameController.start()
          ↓
        gameLoop()  [background thread]
-         ├── doComputerTurn()   picks best card, draws if nothing fits
-         └── doHumanTurn()      player clicks a card or the draw button
-                                applyEffect() handles SKIP / REVERSE / +2 / WILD / +4
-         ↓ (someone empties their hand)
+         ├── doComputerTurn()    picks best card, draws if nothing fits
+         │                       auto-calls UNO when hand reaches 1 card
+         └── doHumanTurn()       player clicks a card → slide animation
+                                 → applyEffect() (SKIP / REVERSE / +2 / WILD / +4)
+                                 → checkUnoAfterPlay() if hand = 1 card
+                                     shows ¡UNO! countdown button (3 s)
+                                     miss it → draw 2 penalty cards
+         │
+         │   safeDraw() wraps every draw:
+         │   deck empty → GameState recycles discard pile automatically
+         ↓
+       (someone empties their hand)
        SoundEffect.win()  →  music ducks  →  TTS announces winner
+       frame.updateScoreboard()  →  scores.csv updated
        showWinnerOverlay()  →  Play again / Exit
 ```
 
@@ -134,7 +151,8 @@ Main → SetupDialog (DB choice, players)
 | MVC pattern | controller / model / view packages |
 | File I/O | `FileManager` reads and writes `scores.csv` |
 | HashMap | scoreboard, CPU colour counting |
-| Concurrency | game loop in background thread, `BlockingQueue` for human input |
+| Concurrency | game loop in background thread, `BlockingQueue` for human input, `CountDownLatch` for UNO challenge and dialogs |
+| Observer-like | `Consumer<Integer>` callback from frame to controller |
 
 ---
 
@@ -148,4 +166,4 @@ Miguel,3
 CPU,1
 ```
 
-Persists between sessions — visible in the end-of-game screen.
+Persists between sessions and is displayed live in the scoreboard panel on the right side of the game window.
