@@ -1,6 +1,7 @@
 package org.example.view.gui;
 
 import javax.sound.sampled.*;
+import java.io.File;
 
 public class SoundEffect {
 
@@ -44,35 +45,71 @@ public class SoundEffect {
         for (int i = 0; i < freqs.length; i++) tone(freqs[i], durs[i], 1.0f);
     }
 
-    private static final String TTS_INIT =
+    private static final float TTS_GAIN = 4.0f;
+
+    private static final String TTS_VOICE_SELECT =
         "Add-Type -AssemblyName System.Speech; " +
         "$s = New-Object System.Speech.Synthesis.SpeechSynthesizer; " +
         "$v = $s.GetInstalledVoices() | Where-Object { $_.VoiceInfo.Culture.Name -like 'es*' } | Select-Object -First 1; " +
-        "if ($v) { $s.SelectVoice($v.VoiceInfo.Name) }; ";
+        "if ($v) { $s.SelectVoice($v.VoiceInfo.Name) }; " +
+        "$s.Volume = 100; ";
 
-    // TTS via PowerShell (Windows) — fuerza voz española si está instalada
+    // TTS via PowerShell → WAV → amplificado y reproducido en Java
     public static void speak(String text) {
         try {
-            String safeText = text.replace("'", "");
-            String script = TTS_INIT +
-                String.format("$s.Rate = 1; $s.Volume = 100; $s.Speak('%s');", safeText);
-            new ProcessBuilder("powershell", "-NoProfile", "-Command", script)
-                .redirectErrorStream(true)
-                .start()
-                .waitFor();
+            String safeText = text.replace("'", "").replace("\"", "");
+            File tmp = File.createTempFile("tts_", ".wav");
+            tmp.deleteOnExit();
+            String wav = tmp.getAbsolutePath().replace("\\", "\\\\");
+            String script = TTS_VOICE_SELECT +
+                String.format("$s.Rate = 1; $s.SetOutputToWaveFile('%s'); $s.Speak('%s'); $s.SetOutputToDefaultAudioDevice();", wav, safeText);
+            Process p = new ProcessBuilder("powershell", "-NoProfile", "-Command", script)
+                .redirectErrorStream(true).start();
+            p.waitFor();
+            playAmplified(tmp, TTS_GAIN);
         } catch (Exception ignored) {}
     }
 
     // "Queda una carta" normal + "UNOOO!" lento y potente
     private static void speakUno() {
         try {
-            String script = TTS_INIT +
-                "$s.Volume = 100; $s.Rate = 1; $s.Speak('Queda una carta...'); " +
-                "$s.Rate = -3; $s.Volume = 100; $s.Speak('UNOOO!');";
-            new ProcessBuilder("powershell", "-NoProfile", "-Command", script)
-                .redirectErrorStream(true)
-                .start()
-                .waitFor();
+            File tmp1 = File.createTempFile("tts_uno1_", ".wav");
+            File tmp2 = File.createTempFile("tts_uno2_", ".wav");
+            tmp1.deleteOnExit(); tmp2.deleteOnExit();
+            String w1 = tmp1.getAbsolutePath().replace("\\", "\\\\");
+            String w2 = tmp2.getAbsolutePath().replace("\\", "\\\\");
+            String script = TTS_VOICE_SELECT +
+                String.format(
+                    "$s.Rate = 1;  $s.SetOutputToWaveFile('%s'); $s.Speak('Queda una carta...'); " +
+                    "$s.Rate = -3; $s.SetOutputToWaveFile('%s'); $s.Speak('UNOOO!'); " +
+                    "$s.SetOutputToDefaultAudioDevice();", w1, w2);
+            Process p = new ProcessBuilder("powershell", "-NoProfile", "-Command", script)
+                .redirectErrorStream(true).start();
+            p.waitFor();
+            playAmplified(tmp1, TTS_GAIN);
+            playAmplified(tmp2, TTS_GAIN);
+        } catch (Exception ignored) {}
+    }
+
+    private static void playAmplified(File wav, float gain) {
+        try {
+            AudioInputStream ais = AudioSystem.getAudioInputStream(wav);
+            AudioFormat fmt = ais.getFormat();
+            byte[] raw = ais.readAllBytes();
+            ais.close();
+            // amplifica muestras PCM de 16 bits little-endian
+            for (int i = 0; i + 1 < raw.length; i += 2) {
+                short s = (short) ((raw[i + 1] << 8) | (raw[i] & 0xFF));
+                long amp = Math.clamp((long)(s * gain), Short.MIN_VALUE, Short.MAX_VALUE);
+                raw[i]     = (byte) (amp & 0xFF);
+                raw[i + 1] = (byte) (amp >> 8);
+            }
+            SourceDataLine line = AudioSystem.getSourceDataLine(fmt);
+            line.open(fmt);
+            line.start();
+            line.write(raw, 0, raw.length);
+            line.drain();
+            line.close();
         } catch (Exception ignored) {}
     }
 
