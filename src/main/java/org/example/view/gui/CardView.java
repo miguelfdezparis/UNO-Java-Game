@@ -139,14 +139,86 @@ public class CardView extends JPanel {
         gc.fill(new Ellipse2D.Float(w * 0.09f, h * 0.12f, w * 0.82f, h * 0.76f));
         gc.dispose();
 
-        String lbl = centerLabel(card.getValue());
-        int fontSize = lbl.length() >= 4 ? 11 : (lbl.length() == 3 ? 15 : 30);
-        g2.setFont(new Font("SansSerif", Font.BOLD, fontSize));
-        FontMetrics fm = g2.getFontMetrics();
-        float tx = (w - fm.stringWidth(lbl)) / 2.0f;
-        float ty = h / 2.0f + fm.getAscent() / 2.0f - fm.getDescent();
-        g2.setColor(base);
-        g2.drawString(lbl, tx, ty);
+        float cx = w / 2.0f, cy = h / 2.0f;
+        Value v = card.getValue();
+        if (v == Value.SKIP) {
+            drawSkipSymbol(g2, cx, cy, w * 0.26f, base);
+        } else if (v == Value.REVERSE) {
+            drawReverseSymbol(g2, cx, cy, w * 0.27f, base);
+        } else {
+            String lbl = centerLabel(v);
+            int fontSize = lbl.length() >= 4 ? 11 : (lbl.length() == 3 ? 15 : 30);
+            g2.setFont(new Font("SansSerif", Font.BOLD, fontSize));
+            FontMetrics fm = g2.getFontMetrics();
+            float tx = (w - fm.stringWidth(lbl)) / 2.0f;
+            float ty = cy + fm.getAscent() / 2.0f - fm.getDescent();
+            g2.setColor(base);
+            g2.drawString(lbl, tx, ty);
+        }
+    }
+
+    /** Circle with a diagonal slash — the UNO skip symbol. */
+    private void drawSkipSymbol(Graphics2D g2, float cx, float cy, float r, Color color) {
+        float sw = Math.max(2f, r * 0.20f);
+        g2.setColor(color);
+        g2.setStroke(new BasicStroke(sw, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+        g2.draw(new Ellipse2D.Float(cx - r, cy - r, r * 2, r * 2));
+        // Diagonal from upper-right to lower-left (like ⊘)
+        double rad = Math.toRadians(45);
+        float dx = (float) (r * Math.cos(rad));
+        float dy = (float) (r * Math.sin(rad));
+        g2.draw(new Line2D.Float(cx + dx, cy - dy, cx - dx, cy + dy));
+    }
+
+    /**
+     * Two curved arrows forming a circle with opposing arrowheads — UNO reverse symbol.
+     *
+     * Java2D Arc2D angles: 0°=right, 90°=down, 180°=left, 270°=up (y-axis points down).
+     * Positive extent = clockwise on screen.
+     * Clockwise tangent direction at angle θ: (-sinθ, cosθ).
+     */
+    private void drawReverseSymbol(Graphics2D g2, float cx, float cy, float r, Color color) {
+        float sw    = Math.max(1.8f, r * 0.18f);
+        float ahSz  = r < 9f ? r * 0.65f : sw * 2.6f;
+        g2.setColor(color);
+        g2.setStroke(new BasicStroke(sw, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+
+        // Top arc: 210° → 330° (clockwise, through 270°=top). Arrowhead at 330°.
+        g2.draw(new Arc2D.Float(cx - r, cy - r, r * 2, r * 2, 210, 120, Arc2D.OPEN));
+        float t1 = (float) Math.toRadians(330);
+        drawArrowhead(g2,
+            cx + r * (float) Math.cos(t1), cy + r * (float) Math.sin(t1),
+            -(float) Math.sin(t1), (float) Math.cos(t1),
+            ahSz, color);
+
+        // Bottom arc: 30° → 150° (clockwise, through 90°=bottom). Arrowhead at 150°.
+        g2.draw(new Arc2D.Float(cx - r, cy - r, r * 2, r * 2, 30, 120, Arc2D.OPEN));
+        float t2 = (float) Math.toRadians(150);
+        drawArrowhead(g2,
+            cx + r * (float) Math.cos(t2), cy + r * (float) Math.sin(t2),
+            -(float) Math.sin(t2), (float) Math.cos(t2),
+            ahSz, color);
+    }
+
+    private void drawArrowhead(Graphics2D g2, float tipX, float tipY,
+                               float dx, float dy, float size, Color color) {
+        float len = (float) Math.sqrt(dx * dx + dy * dy);
+        if (len < 1e-4f) return;
+        dx /= len; dy /= len;
+        float hw = size * 0.52f;
+        float bx = tipX - dx * size, by = tipY - dy * size;
+        float[] xs = { tipX, bx - dy * hw, bx + dy * hw };
+        float[] ys = { tipY, by + dx * hw, by - dx * hw };
+        GeneralPath tri = new GeneralPath();
+        tri.moveTo(xs[0], ys[0]);
+        tri.lineTo(xs[1], ys[1]);
+        tri.lineTo(xs[2], ys[2]);
+        tri.closePath();
+        Stroke prev = g2.getStroke();
+        g2.setStroke(new BasicStroke(1));
+        g2.setColor(color);
+        g2.fill(tri);
+        g2.setStroke(prev);
     }
 
     private void paintWildOval(Graphics2D g2, int w, int h) {
@@ -173,21 +245,38 @@ public class CardView extends JPanel {
     }
 
     private void paintCorners(Graphics2D g2, int w, int h) {
-        String s = shortLabel(card.getValue());
-        g2.setFont(new Font("SansSerif", Font.BOLD, 11));
-        FontMetrics fm = g2.getFontMetrics();
+        Value v = card.getValue();
+        if (v == Value.SKIP || v == Value.REVERSE) {
+            float r = (v == Value.SKIP) ? 5.5f : 5.2f;
+            Color shadow = new Color(0, 0, 0, 90);
+            // top-left
+            paintCornerSymbol(g2, v, 8.5f, 9.5f, r, shadow);
+            paintCornerSymbol(g2, v, 7.5f, 8.5f, r, Color.WHITE);
+            // bottom-right (rotated 180°)
+            Graphics2D gc = copy(g2);
+            gc.rotate(Math.PI, w / 2.0, h / 2.0);
+            paintCornerSymbol(gc, v, 8.5f, 9.5f, r, shadow);
+            paintCornerSymbol(gc, v, 7.5f, 8.5f, r, Color.WHITE);
+            gc.dispose();
+        } else {
+            String s = shortLabel(v);
+            g2.setFont(new Font("SansSerif", Font.BOLD, 11));
+            // top-left
+            g2.setColor(new Color(0, 0, 0, 90)); g2.drawString(s, 6, 15);
+            g2.setColor(Color.WHITE);             g2.drawString(s, 5, 14);
+            // bottom-right (rotated 180°)
+            Graphics2D gc = copy(g2);
+            gc.setFont(new Font("SansSerif", Font.BOLD, 11));
+            gc.rotate(Math.PI, w / 2.0, h / 2.0);
+            gc.setColor(new Color(0, 0, 0, 90)); gc.drawString(s, 6, 15);
+            gc.setColor(Color.WHITE);             gc.drawString(s, 5, 14);
+            gc.dispose();
+        }
+    }
 
-        // top-left
-        g2.setColor(new Color(0, 0, 0, 90)); g2.drawString(s, 6, 15);
-        g2.setColor(Color.WHITE);             g2.drawString(s, 5, 14);
-
-        // bottom-right (rotated 180°)
-        Graphics2D gc = copy(g2);
-        gc.setFont(new Font("SansSerif", Font.BOLD, 11));
-        gc.rotate(Math.PI, w / 2.0, h / 2.0);
-        gc.setColor(new Color(0, 0, 0, 90)); gc.drawString(s, 6, 15);
-        gc.setColor(Color.WHITE);             gc.drawString(s, 5, 14);
-        gc.dispose();
+    private void paintCornerSymbol(Graphics2D g2, Value v, float cx, float cy, float r, Color color) {
+        if (v == Value.SKIP)    drawSkipSymbol(g2, cx, cy, r, color);
+        else                    drawReverseSymbol(g2, cx, cy, r, color);
     }
 
     // ─── Helpers ──────────────────────────────────────────────────────────────
