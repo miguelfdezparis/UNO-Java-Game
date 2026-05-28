@@ -142,9 +142,9 @@ public class CardView extends JPanel {
         float cx = w / 2.0f, cy = h / 2.0f;
         Value v = card.getValue();
         if (v == Value.SKIP) {
-            drawSkipSymbol(g2, cx, cy, w * 0.26f, base);
+            drawSkipSymbol(g2, cx, cy, w * 0.28f, base);
         } else if (v == Value.REVERSE) {
-            drawReverseSymbol(g2, cx, cy, w * 0.27f, base);
+            drawReverseSymbol(g2, cx, cy, w * 0.30f, base);
         } else {
             String lbl = centerLabel(v);
             int fontSize = lbl.length() >= 4 ? 11 : (lbl.length() == 3 ? 15 : 30);
@@ -171,28 +171,32 @@ public class CardView extends JPanel {
     }
 
     /**
-     * Two curved arrows forming a circle with opposing arrowheads — UNO reverse symbol.
+     * Two curved arrows — UNO reverse symbol.
      *
-     * Java2D Arc2D angles: 0°=right, 90°=down, 180°=left, 270°=up (y-axis points down).
+     * Java2D Arc2D: 0°=right(3h), 90°=down(6h), 180°=left(9h), 270°=up(12h).
      * Positive extent = clockwise on screen.
-     * Clockwise tangent direction at angle θ: (-sinθ, cosθ).
+     * Clockwise tangent at angle θ: (-sinθ, cosθ).
+     *
+     * Top arrow : tail at 9 o'clock (180°), clockwise 150° → tip at 1:30 (330°).
+     * Bottom arrow: tail at 3 o'clock (0°),  clockwise 150° → tip at 7:30 (150°).
+     * 30° gap on each side, matching the classic UNO reverse card.
      */
     private void drawReverseSymbol(Graphics2D g2, float cx, float cy, float r, Color color) {
-        float sw    = Math.max(1.8f, r * 0.18f);
-        float ahSz  = r < 9f ? r * 0.65f : sw * 2.6f;
+        float sw   = Math.max(2f, r * 0.20f);
+        float ahSz = r < 9f ? r * 0.72f : Math.max(sw * 2.8f, r * 0.32f);
         g2.setColor(color);
         g2.setStroke(new BasicStroke(sw, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
 
-        // Top arc: 210° → 330° (clockwise, through 270°=top). Arrowhead at 330°.
-        g2.draw(new Arc2D.Float(cx - r, cy - r, r * 2, r * 2, 210, 120, Arc2D.OPEN));
+        // Top arc: 180° → 330° (150° clockwise, through 12 o'clock). Arrowhead at 330°.
+        g2.draw(new Arc2D.Float(cx - r, cy - r, r * 2, r * 2, 180, 150, Arc2D.OPEN));
         float t1 = (float) Math.toRadians(330);
         drawArrowhead(g2,
             cx + r * (float) Math.cos(t1), cy + r * (float) Math.sin(t1),
             -(float) Math.sin(t1), (float) Math.cos(t1),
             ahSz, color);
 
-        // Bottom arc: 30° → 150° (clockwise, through 90°=bottom). Arrowhead at 150°.
-        g2.draw(new Arc2D.Float(cx - r, cy - r, r * 2, r * 2, 30, 120, Arc2D.OPEN));
+        // Bottom arc: 0° → 150° (150° clockwise, through 6 o'clock). Arrowhead at 150°.
+        g2.draw(new Arc2D.Float(cx - r, cy - r, r * 2, r * 2, 0, 150, Arc2D.OPEN));
         float t2 = (float) Math.toRadians(150);
         drawArrowhead(g2,
             cx + r * (float) Math.cos(t2), cy + r * (float) Math.sin(t2),
