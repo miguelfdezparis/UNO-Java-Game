@@ -1,5 +1,6 @@
 package org.example.model;
 
+import org.example.exceptions.CartaNoJugableException;
 import java.util.ArrayList;
 
 // la mano del jugador, simplemente la lista de cartas que tiene ahora mismo
@@ -18,6 +19,15 @@ public class Hand {
 
     // juega la carta que esta en esa posicion, la elimina de la mano y la devuelve
     public Card playCard(int index) {
+        return cards.remove(index);
+    }
+
+    // juega la carta validando que sea compatible; lanza excepcion si no lo es
+    public Card playCard(int index, Card topCard, Color currentColor) throws CartaNoJugableException {
+        Card chosen = cards.get(index);
+        if (!chosen.isCompatible(topCard, currentColor)) {
+            throw new CartaNoJugableException(chosen.toString(), topCard.toString());
+        }
         return cards.remove(index);
     }
 
