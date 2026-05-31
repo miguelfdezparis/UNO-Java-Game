@@ -11,19 +11,19 @@ import java.sql.SQLException;
 // lee las credenciales del .env para no tenerlas hardcodeadas en el codigo
 public class DatabaseConnection {
 
-    private static final Dotenv dotenv = Dotenv.load();
+    private static final Dotenv dotenv = Dotenv.configure().ignoreIfMissing().load();
 
     public static Connection conectar() throws SQLException {
         String url  = dotenv.get("POSTGRES_URL");
         String user = dotenv.get("POSTGRES_USER");
         String pass = dotenv.get("POSTGRES_PASS");
+        if (url == null) throw new SQLException("No se encontro .env con credenciales PostgreSQL. Ejecuta iniciar-bases-datos.bat.");
         return DriverManager.getConnection(url, user, pass);
     }
 
     public static MongoClient crearCliente() {
-        //Lee la uri (privada) del .env
-        String uri  = dotenv.get("MONGO_URI");
-        //Crea la base
+        String uri = dotenv.get("MONGO_URI");
+        if (uri == null) throw new RuntimeException("No se encontro .env con credenciales MongoDB. Ejecuta iniciar-bases-datos.bat.");
         return MongoClients.create(uri);
     }
 }

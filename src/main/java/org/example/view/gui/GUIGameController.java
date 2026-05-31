@@ -46,7 +46,7 @@ public class GUIGameController {
                 dao.inicializar(BarajaCatalog.generar());
                 ArrayList<Carta> catalog = dao.obtenerBaraja();
                 if (!catalog.isEmpty()) cards = CartaConverter.toCards(catalog);
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 SwingUtilities.invokeLater(() ->
                     JOptionPane.showMessageDialog(frame,
                         "No se pudo conectar a la BD (" + e.getMessage() + ").\n" +

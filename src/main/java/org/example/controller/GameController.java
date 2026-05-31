@@ -28,8 +28,14 @@ public class GameController {
         fileManager = new FileManager();
         allTimeScores = fileManager.loadScores();
         int dbChoice = view.askDatabase();
-        barajaDAO = (dbChoice == 1) ? new PostgresBarajaDAO() : new MongoBarajaDAO();
-        barajaDAO.inicializar(BarajaCatalog.generar());
+        try {
+            barajaDAO = (dbChoice == 1) ? new PostgresBarajaDAO() : new MongoBarajaDAO();
+            barajaDAO.inicializar(BarajaCatalog.generar());
+        } catch (Throwable e) {
+            System.err.println("No se pudo conectar a la BD: " + e.getMessage());
+            System.err.println("Continuando sin base de datos.");
+            barajaDAO = null;
+        }
     }
 
     // bucle del menu principal, se queda aqui hasta que el usuario elige salir
@@ -51,12 +57,9 @@ public class GameController {
     // prepara los jugadores, reparte las cartas y arranca la partida
     private void runGame() {
         ArrayList<Player> players = setupPlayers();
-        ArrayList<Carta> catalogo = barajaDAO.obtenerBaraja();
-        if (catalogo.isEmpty()) {
-            view.showMessage("Error: no se pudieron cargar las cartas de la BD. Comprueba que la base de datos esta corriendo.");
-            return;
-        }
-        GameState state = new GameState(players, CartaConverter.toCards(catalogo));
+        ArrayList<Carta> catalogo = (barajaDAO != null) ? barajaDAO.obtenerBaraja() : new ArrayList<>();
+        GameState state = new GameState(players,
+                catalogo.isEmpty() ? null : CartaConverter.toCards(catalogo));
         state.dealInitialCards();
         gameLoop(state);
         fileManager.saveScores(allTimeScores);
