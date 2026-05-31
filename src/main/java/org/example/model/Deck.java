@@ -1,5 +1,6 @@
 package org.example.model;
 
+import org.example.exceptions.MazoVacioException;
 import java.util.ArrayList;
 import java.util.Collections;
 
@@ -66,7 +67,7 @@ public class Deck {
     // saca la carta de arriba del mazo, lanza excepcion si esta vacio
     public Card draw() {
         if (cards.isEmpty()) {
-            throw new IllegalStateException("El mazo esta vacio, hay que reciclar el descarte primero.");
+            throw new MazoVacioException();
         }
         return cards.remove(0);
     }
