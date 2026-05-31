@@ -3,15 +3,23 @@ package org.example.model;
 // todos los valores posibles de una carta UNO
 public enum Value {
 
-    // cartas numericas
-    ZERO, ONE, TWO, THREE, FOUR, FIVE, SIX, SEVEN, EIGHT, NINE,
+    ZERO("0"), ONE("1"), TWO("2"), THREE("3"), FOUR("4"),
+    FIVE("5"), SIX("6"), SEVEN("7"), EIGHT("8"), NINE("9"),
 
-    // cartas de accion, tienen color
-    SKIP,       // el siguiente jugador pierde el turno
-    REVERSE,    // cambia el sentido de la partida
-    DRAW_TWO,   // el siguiente roba 2 y pierde el turno
+    SKIP("Salta"),
+    REVERSE("Reverso"),
+    DRAW_TWO("Chupa 2"),
 
-    // cartas comodin, siempre son Color.BLACK
-    WILD,           // elige el color que quieras
-    WILD_DRAW_FOUR  // elige color y el siguiente roba 4
+    WILD("Cambio de Color"),
+    WILD_DRAW_FOUR("Chupa 4");
+
+    private final String label;
+
+    Value(String label) {
+        this.label = label;
+    }
+
+    public String getLabel() {
+        return label;
+    }
 }

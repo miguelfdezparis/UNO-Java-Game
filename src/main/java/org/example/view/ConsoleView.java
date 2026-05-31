@@ -139,26 +139,23 @@ public class ConsoleView {
     public String renderCard(Card card) {
         String ansi  = ansiForColor(card.getColor());
         String emoji = emojiForColor(card.getColor());
-        String value = labelForValue(card.getValue());
+        String value = card.getValue().getLabel();
         if (card.getColor() == Color.BLACK) {
             return ansi + BOLD + emoji + " " + value + RESET;
         }
-        String color = spanishColor(card.getColor());
-        return ansi + BOLD + emoji + " " + color + " " + value + RESET;
+        return ansi + BOLD + emoji + " " + card.getColor().getLabel() + " " + value + RESET;
     }
 
     // version mas destacada de la carta para mostrarla como carta actual
     private String renderCardBig(Card card, Color currentColor) {
         String ansi  = ansiForColor(card.getColor());
         String emoji = emojiForColor(card.getColor());
-        String color = spanishColor(card.getColor());
-        String value = labelForValue(card.getValue());
+        String value = card.getValue().getLabel();
 
         if (card.getColor() == Color.BLACK) {
-            // comodin: mostramos el tipo y el color que esta activo
-            return ansi + BOLD + emoji + "  " + value + "  ->  " + spanishColor(currentColor) + RESET;
+            return ansi + BOLD + emoji + "  " + value + "  ->  " + currentColor.getLabel() + RESET;
         }
-        return ansi + BOLD + emoji + "  " + color + "   [ " + value + " ]" + RESET;
+        return ansi + BOLD + emoji + "  " + card.getColor().getLabel() + "   [ " + value + " ]" + RESET;
     }
 
     // pregunta que carta quiere jugar, devuelve el indice o -1 si elige robar
@@ -204,10 +201,10 @@ public class ConsoleView {
     public Color chooseColor() {
         System.out.println();
         System.out.println(BOLD + WHITE + "  Elige un color:" + RESET);
-        System.out.println("   " + RED    + BOLD + "1. ROJO"     + RESET);
-        System.out.println("   " + BLUE   + BOLD + "2. AZUL"     + RESET);
-        System.out.println("   " + GREEN  + BOLD + "3. VERDE"    + RESET);
-        System.out.println("   " + YELLOW + BOLD + "4. AMARILLO" + RESET);
+        System.out.println("   " + RED    + BOLD + "1. " + Color.RED.getLabel()    + RESET);
+        System.out.println("   " + BLUE   + BOLD + "2. " + Color.BLUE.getLabel()   + RESET);
+        System.out.println("   " + GREEN  + BOLD + "3. " + Color.GREEN.getLabel()  + RESET);
+        System.out.println("   " + YELLOW + BOLD + "4. " + Color.YELLOW.getLabel() + RESET);
         System.out.print(CYAN + "  > " + RESET);
         System.out.flush();
 
@@ -365,29 +362,4 @@ public class ConsoleView {
         };
     }
 
-    // devuelve el nombre del color en español
-    private String spanishColor(Color color) {
-        return switch (color) {
-            case RED    -> "ROJO";
-            case BLUE   -> "AZUL";
-            case GREEN  -> "VERDE";
-            case YELLOW -> "AMARILLO";
-            case BLACK  -> "COMODIN";
-        };
-    }
-
-    // devuelve el texto corto que se muestra en la carta (numero o nombre en español)
-    private String labelForValue(Value value) {
-        return switch (value) {
-            case ZERO  -> "0"; case ONE   -> "1"; case TWO   -> "2";
-            case THREE -> "3"; case FOUR  -> "4"; case FIVE  -> "5";
-            case SIX   -> "6"; case SEVEN -> "7"; case EIGHT -> "8";
-            case NINE  -> "9";
-            case SKIP           -> "SALTA";
-            case REVERSE        -> "REVERSO";
-            case DRAW_TWO       -> "CHUPA 2";
-            case WILD           -> "CAMBIO DE COLOR";
-            case WILD_DRAW_FOUR -> "CHUPA 4";
-        };
-    }
 }
