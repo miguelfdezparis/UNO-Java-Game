@@ -8,4 +8,6 @@ public interface BarajaDAO {
     void inicializar(ArrayList<Carta> catalogo);
     ArrayList<Carta> obtenerBaraja();
     void guardarBaraja(ArrayList<Carta> cartas);
+    void actualizarApariciones(String valor, String color, int nuevas);
+    void eliminarCarta(String valor, String color);
 }

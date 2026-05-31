@@ -62,4 +62,31 @@ public class PostgresBarajaDAO implements BarajaDAO {
         }
         return lista;
     }
+
+    @Override
+    public void actualizarApariciones(String valor, String color, int nuevas) {
+        String sql = "UPDATE cartas SET apariciones = ? WHERE valor = ? AND color = ?";
+        try (Connection con = DatabaseConnection.conectar();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, nuevas);
+            ps.setString(2, valor);
+            ps.setString(3, color);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            System.err.println("Error al actualizar en PostgreSQL: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public void eliminarCarta(String valor, String color) {
+        String sql = "DELETE FROM cartas WHERE valor = ? AND color = ?";
+        try (Connection con = DatabaseConnection.conectar();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, valor);
+            ps.setString(2, color);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            System.err.println("Error al eliminar en PostgreSQL: " + e.getMessage());
+        }
+    }
 }

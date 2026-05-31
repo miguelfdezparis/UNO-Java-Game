@@ -65,4 +65,27 @@ public class MongoBarajaDAO implements BarajaDAO {
         }
         return lista;
     }
+
+    @Override
+    public void actualizarApariciones(String valor, String color, int nuevas) {
+        try (MongoClient client = DatabaseConnection.crearCliente()) {
+            MongoCollection<Document> col = client.getDatabase("unojavagame").getCollection("Cartas");
+            col.updateOne(
+                new Document("valor", valor).append("color", color),
+                new Document("$set", new Document("apariciones", nuevas))
+            );
+        } catch (Exception e) {
+            System.err.println("Error al actualizar en MongoDB: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public void eliminarCarta(String valor, String color) {
+        try (MongoClient client = DatabaseConnection.crearCliente()) {
+            MongoCollection<Document> col = client.getDatabase("unojavagame").getCollection("Cartas");
+            col.deleteOne(new Document("valor", valor).append("color", color));
+        } catch (Exception e) {
+            System.err.println("Error al eliminar en MongoDB: " + e.getMessage());
+        }
+    }
 }

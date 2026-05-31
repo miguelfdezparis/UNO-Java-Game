@@ -3,6 +3,8 @@ package org.example.controller;
 import org.example.db.BarajaDAO;
 import org.example.db.MongoBarajaDAO;
 import org.example.db.PostgresBarajaDAO;
+import org.example.exceptions.CartaNoJugableException;
+import org.example.exceptions.MazoVacioException;
 import org.example.model.*;
 import org.example.utils.BarajaCatalog;
 import org.example.utils.CartaConverter;
@@ -83,12 +85,19 @@ public class GameController {
             Player current = state.getCurrentPlayer();
             Card played;
 
-            if (current.isComputer()) {
-                view.showComputerTurn(current);
-                played = computerTurn(state);
-            } else {
-                view.showHand(current);
-                played = humanTurn(state);
+            try {
+                if (current.isComputer()) {
+                    view.showComputerTurn(current);
+                    played = computerTurn(state);
+                } else {
+                    view.showHand(current);
+                    played = humanTurn(state);
+                }
+            } catch (MazoVacioException e) {
+                view.showMessage("No quedan cartas disponibles. La partida termina en empate.");
+                state.setGameRunning(false);
+                view.pressEnter();
+                return;
             }
 
             // miramos si ha ganado antes de aplicar el efecto de la carta
@@ -153,10 +162,15 @@ public class GameController {
         }
 
         // juega la carta que eligio
-        Card toPlay = player.getHand().playCard(choice);
-        state.playCard(toPlay);
-        handleWild(toPlay, state);
-        return toPlay;
+        try {
+            Card toPlay = player.getHand().playCard(choice, state.getTopCard(), state.getCurrentColor());
+            state.playCard(toPlay);
+            handleWild(toPlay, state);
+            return toPlay;
+        } catch (CartaNoJugableException e) {
+            view.showError(e.getMessage());
+            return humanTurn(state);
+        }
     }
 
     // gestiona el turno del computer: intenta jugar la mejor carta, si no tiene roba
